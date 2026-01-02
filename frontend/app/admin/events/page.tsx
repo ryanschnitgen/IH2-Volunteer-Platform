@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
 import { formatTime } from "@/lib/formatTime";
 import { EVENT_TYPES, getCategoryForEventType } from "@/constants/eventTypes";
+import ConfirmModal from "@/components/ConfirmModal";
 
 interface Event {
   _id: string;
@@ -87,6 +88,14 @@ export default function AdminEventsPage() {
   const [addUserEmail, setAddUserEmail] = useState("");
   const [addingUser, setAddingUser] = useState(false);
 
+  // Confirm modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ title: "", message: "", onConfirm: () => {} });
+
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin(user.email))) {
       router.push("/");
@@ -167,7 +176,8 @@ export default function AdminEventsPage() {
       ));
     } catch (err) {
       console.error("Error updating attendance:", err);
-      alert("Failed to update attendance. Please try again.");
+      setError("Failed to update attendance. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -192,7 +202,20 @@ export default function AdminEventsPage() {
       confirmMessage = `Assign hours to ${needsAssignmentCount} attendee(s)? (${alreadyAssignedCount} already have hours assigned and will be skipped)`;
     }
 
-    if (!confirm(confirmMessage)) return;
+    // Show custom confirmation modal
+    setConfirmModalData({
+      title: "Assign Hours",
+      message: confirmMessage,
+      onConfirm: async () => {
+        setShowConfirmModal(false);
+        await executeAssignHours();
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const executeAssignHours = async () => {
+    if (!selectedEventForRegistrations) return;
 
     try {
       setAssigningHours(selectedEventForRegistrations._id);
@@ -222,7 +245,8 @@ export default function AdminEventsPage() {
         message = "Event marked as completed.";
       }
 
-      alert(message);
+      setSuccess(message);
+      setTimeout(() => setSuccess(""), 3000);
 
       // Reload registrations to show updated hours
       if (selectedEventForRegistrations) {
@@ -230,7 +254,8 @@ export default function AdminEventsPage() {
       }
     } catch (err: any) {
       console.error("Error assigning hours:", err);
-      alert(err.message || "Failed to assign hours. Please try again.");
+      setError(err.message || "Failed to assign hours. Please try again.");
+      setTimeout(() => setError(""), 3000);
     } finally {
       setAssigningHours(null);
     }
@@ -1663,6 +1688,15 @@ export default function AdminEventsPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={() => setShowConfirmModal(false)}
+      />
 
     </div>
   );
