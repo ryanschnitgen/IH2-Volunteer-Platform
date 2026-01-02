@@ -2,20 +2,51 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Event from '@/models/Event';
 import EventRegistration from '@/models/EventRegistration';
+import VolunteerProfile from '@/models/VolunteerProfile';
+import User from '@/models/User';
 
 // Register for an event
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, userId, userEmail, userName, additionalAttendees, attendeeNames, isGroupCheckIn } = await request.json();
+    const { eventId, userId, userEmail, userName, additionalAttendees, attendeeNames, isGroupCheckIn, retroactive } = await request.json();
 
-    if (!eventId || !userId || !userEmail || !userName) {
+    await connectDB();
+
+    let finalUserId = userId;
+    let finalUserEmail = userEmail;
+    let finalUserName = userName;
+
+    // If retroactive (admin adding user by email only), look up user info
+    if (retroactive && userEmail && !userId) {
+      // Try to find volunteer profile first
+      const volunteerProfile = await VolunteerProfile.findOne({ email: userEmail });
+
+      if (volunteerProfile) {
+        finalUserId = volunteerProfile.linkedUserId || userEmail; // Use linkedUserId if available, fallback to email
+        finalUserName = `${volunteerProfile.firstName} ${volunteerProfile.lastName}`;
+        finalUserEmail = volunteerProfile.email;
+      } else {
+        // Try to find in User collection
+        const user = await User.findOne({ email: userEmail });
+        if (user) {
+          finalUserId = user.firebaseUid || userEmail;
+          finalUserName = user.displayName || user.email;
+          finalUserEmail = user.email;
+        } else {
+          return NextResponse.json(
+            { error: 'No volunteer found with this email address' },
+            { status: 404 }
+          );
+        }
+      }
+    }
+
+    if (!eventId || !finalUserId || !finalUserEmail || !finalUserName) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-
-    await connectDB();
 
     // Calculate total attendees (primary registrant + additional)
     const numAdditional = additionalAttendees || 0;
@@ -49,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already registered
-    const existing = await EventRegistration.findOne({ eventId, userId });
+    const existing = await EventRegistration.findOne({ eventId, userId: finalUserId });
     if (existing) {
       return NextResponse.json(
         { error: 'Already registered for this event' },
@@ -60,9 +91,9 @@ export async function POST(request: NextRequest) {
     // Create registration
     const registration = await EventRegistration.create({
       eventId,
-      userId,
-      userEmail,
-      userName,
+      userId: finalUserId,
+      userEmail: finalUserEmail,
+      userName: finalUserName,
       eventTitle: event.title,
       eventDate: event.date,
       eventStartTime: event.startTime,
