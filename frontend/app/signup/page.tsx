@@ -5,6 +5,30 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+// Helper function to get user-friendly error messages
+function getAuthErrorMessage(error: any): string {
+  const errorCode = error?.code || '';
+
+  switch (errorCode) {
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Please sign in instead, or contact an administrator if you believe this is an error.';
+    case 'auth/invalid-email':
+      return 'Invalid email address';
+    case 'auth/operation-not-allowed':
+      return 'Email/password accounts are not enabled';
+    case 'auth/weak-password':
+      return 'Password is too weak. Please use at least 8 characters with a mix of letters and numbers';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in cancelled';
+    case 'auth/unauthorized-domain':
+      return 'This domain is not authorized for sign-in';
+    default:
+      return error?.message || 'Failed to create account';
+  }
+}
+
 export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -67,7 +91,7 @@ export default function Signup() {
 
       router.push("/waiver");
     } catch (err: any) {
-      setError(err.message || "Failed to create account");
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -81,7 +105,7 @@ export default function Signup() {
       await signInWithGoogle();
       router.push("/waiver");
     } catch (err: any) {
-      setError(err.message || "Failed to sign in with Google");
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
