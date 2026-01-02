@@ -7,7 +7,25 @@ if (!admin.apps.length) {
 
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       // Option 1: Full service account JSON in one environment variable
-      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      let serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+      // Check if it's base64 encoded
+      try {
+        // If it doesn't look like JSON, try to decode from base64
+        if (!serviceAccountString.trim().startsWith('{')) {
+          console.log('Decoding base64 service account...');
+          serviceAccountString = Buffer.from(serviceAccountString, 'base64').toString('utf8');
+        }
+      } catch (e) {
+        console.log('Not base64 encoded, using as-is');
+      }
+
+      serviceAccount = JSON.parse(serviceAccountString);
+
+      // Fix the private key formatting (Vercel may double-escape newlines)
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
     } else {
       // Option 2: Individual environment variables
       const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
