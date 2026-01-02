@@ -9,6 +9,9 @@ export async function POST(request: NextRequest) {
 
     // Use direct MongoDB connection to bypass any caching
     const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection not established');
+    }
     const collection = db.collection('eventregistrations');
 
     // Update ALL documents to add checkedIn: false
