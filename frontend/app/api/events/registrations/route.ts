@@ -1,0 +1,79 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import EventRegistration from '@/models/EventRegistration';
+
+// Get user's event registrations
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID required' },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    const registrations = await EventRegistration.find({ userId }).sort({ eventDate: 1 });
+
+    // Log registration data for debugging
+    console.log('Fetched registrations for user:', userId);
+    console.log('Number of registrations:', registrations.length);
+    if (registrations.length > 0) {
+      console.log('Sample registration data:', {
+        _id: registrations[0]._id,
+        totalAttendees: registrations[0].totalAttendees,
+        additionalAttendees: registrations[0].additionalAttendees,
+        attendeeNames: registrations[0].attendeeNames,
+        hasAttendeeNames: !!registrations[0].attendeeNames,
+        attendeeNamesLength: registrations[0].attendeeNames?.length || 0
+      });
+    }
+
+    return NextResponse.json({ registrations });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch registrations' },
+      { status: 500 }
+    );
+  }
+}
+
+// Update registration attendance status
+export async function PATCH(request: NextRequest) {
+  try {
+    const { registrationId, attended } = await request.json();
+
+    if (!registrationId || typeof attended !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Registration ID and attended status required' },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    const registration = await EventRegistration.findByIdAndUpdate(
+      registrationId,
+      { attended },
+      { new: true }
+    );
+
+    if (!registration) {
+      return NextResponse.json(
+        { error: 'Registration not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ registration, updated: true });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || 'Failed to update registration' },
+      { status: 500 }
+    );
+  }
+}

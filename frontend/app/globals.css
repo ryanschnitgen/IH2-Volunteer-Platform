@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  /* IH2 Vibrant Color Palette */
+  --color-primary-50: #fef3f2;
+  --color-primary-100: #fee5e2;
+  --color-primary-200: #fecfca;
+  --color-primary-300: #fdaca4;
+  --color-primary-400: #fb7d6f;
+  --color-primary-500: #f35742;
+  --color-primary-600: #e03a24;
+  --color-primary-700: #bc2d1a;
+  --color-primary-800: #9c2919;
+  --color-primary-900: #81281c;
+
+  /* IH2 Neutrals */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
+
+  /* Accent Colors for Vibrancy */
+  --color-accent-blue: #3b82f6;
+  --color-accent-purple: #a855f7;
+  --color-accent-green: #10b981;
+  --color-accent-orange: #f97316;
+  --color-accent-pink: #ec4899;
+}
+
+body {
+  color: #434343;
+  background: #ffffff;
+}
+
+/* Print styles */
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Hide navigation, footer, and UI elements */
+  nav, footer {
+    display: none !important;
+  }
+
+  /* Ensure print content takes full width */
+  .print\:block {
+    display: block !important;
+  }
+
+  /* Remove shadows and rounded corners for print */
+  * {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Prevent page breaks inside tables */
+  table {
+    page-break-inside: avoid;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+}
