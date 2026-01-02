@@ -14,7 +14,7 @@ export async function sendEmail({
   to,
   subject,
   html,
-  from = 'IH2 Volunteer Portal <onboarding@resend.dev>',
+  from = process.env.RESEND_FROM_EMAIL || 'IH2 Volunteer Portal <noreply@inspiredheartsandhands.com>',
   replyTo,
 }: SendEmailParams) {
   if (!process.env.RESEND_API_KEY) {
