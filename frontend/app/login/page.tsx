@@ -5,6 +5,33 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+// Helper function to get user-friendly error messages
+function getAuthErrorMessage(error: any): string {
+  const errorCode = error?.code || '';
+
+  switch (errorCode) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+      return 'Incorrect email or password';
+    case 'auth/user-not-found':
+      return 'No account found with this email';
+    case 'auth/invalid-email':
+      return 'Invalid email address';
+    case 'auth/user-disabled':
+      return 'This account has been disabled';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please try again later';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in cancelled';
+    case 'auth/unauthorized-domain':
+      return 'This domain is not authorized for sign-in';
+    default:
+      return error?.message || 'Failed to sign in';
+  }
+}
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +49,7 @@ export default function Login() {
       await signIn(email, password);
       router.push("/");
     } catch (err: any) {
-      setError(err.message || "Failed to sign in");
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -36,7 +63,7 @@ export default function Login() {
       await signInWithGoogle();
       router.push("/");
     } catch (err: any) {
-      setError(err.message || "Failed to sign in with Google");
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
