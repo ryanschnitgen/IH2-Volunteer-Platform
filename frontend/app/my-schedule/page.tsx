@@ -17,6 +17,8 @@ interface ScheduledEvent {
   additionalAttendees: number;
   attendeeNames: string[];
   totalAttendees: number;
+  hoursCompleted?: number;
+  checkedIn?: boolean;
 }
 
 interface EventDetails {
@@ -533,7 +535,7 @@ END:VCALENDAR`;
                         </>
                       ) : isPastEvent && !isCancelled ? (
                         <div className="bg-white border-2 rounded-lg p-4">
-                          {registration.hoursCompleted > 0 ? (
+                          {registration.hoursCompleted && registration.hoursCompleted > 0 ? (
                             <div className="text-center">
                               <div className="text-3xl font-bold text-green-700 mb-1">
                                 {registration.hoursCompleted.toFixed(2)}
