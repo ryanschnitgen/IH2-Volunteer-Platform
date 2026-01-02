@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   User,
+  UserCredential,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
