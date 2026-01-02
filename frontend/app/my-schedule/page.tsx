@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { formatTime } from "@/lib/formatTime";
+import ConfirmModal from "@/components/ConfirmModal";
 
 interface ScheduledEvent {
   _id: string;
@@ -50,6 +51,14 @@ export default function MySchedule() {
   const [additionalAttendees, setAdditionalAttendees] = useState(0);
   const [attendeeNames, setAttendeeNames] = useState<string[]>([]);
   const [updating, setUpdating] = useState(false);
+
+  // Confirm modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ title: "", message: "", onConfirm: () => {} });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -100,7 +109,20 @@ export default function MySchedule() {
   const handleCancelRegistration = async (eventId: string) => {
     if (!user) return;
 
-    if (!confirm("Are you sure you want to cancel this registration?")) return;
+    // Show custom confirmation modal
+    setConfirmModalData({
+      title: "Cancel Registration",
+      message: "Are you sure you want to cancel this registration?",
+      onConfirm: async () => {
+        setShowConfirmModal(false);
+        await executeCancelRegistration(eventId);
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const executeCancelRegistration = async (eventId: string) => {
+    if (!user) return;
 
     try {
       setCancellingId(eventId);
@@ -118,7 +140,8 @@ export default function MySchedule() {
       // Reload schedule
       await loadSchedule();
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
+      setTimeout(() => setError(""), 3000);
     } finally {
       setCancellingId(null);
     }
@@ -166,7 +189,8 @@ export default function MySchedule() {
     if (isGroupRegistration && additionalAttendees > 0) {
       const allNamesFilled = attendeeNames.every(name => name.trim().length > 0);
       if (!allNamesFilled) {
-        alert('Please provide names for all additional attendees');
+        setError('Please provide names for all additional attendees');
+        setTimeout(() => setError(""), 3000);
         return;
       }
     }
@@ -192,7 +216,8 @@ export default function MySchedule() {
       closeEditModal();
       await loadSchedule();
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
+      setTimeout(() => setError(""), 3000);
     } finally {
       setUpdating(false);
     }
@@ -734,6 +759,15 @@ END:VCALENDAR`;
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
 }

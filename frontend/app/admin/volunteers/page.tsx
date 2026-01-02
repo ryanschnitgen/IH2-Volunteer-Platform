@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
+import ConfirmModal from "@/components/ConfirmModal";
 
 interface VolunteerProfile {
   _id: string;
@@ -46,6 +47,14 @@ export default function AdminVolunteersPage() {
   const [volunteerToDelete, setVolunteerToDelete] = useState<VolunteerProfile | null>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [duplicateCount, setDuplicateCount] = useState(0);
+
+  // Confirm modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ title: "", message: "", onConfirm: () => {} });
 
   // Super admins who can assign admin privileges
   const SUPER_ADMINS = [
@@ -298,18 +307,29 @@ export default function AdminVolunteersPage() {
         await loadVolunteers(); // Refresh to update total hours
         setEditingHourId(null);
       } else {
-        alert(`Error: ${data.error}`);
+        setError(data.error);
+        setTimeout(() => setError(""), 3000);
       }
     } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      setError(error.message);
+      setTimeout(() => setError(""), 3000);
     }
   };
 
   const deleteHoursLog = async (hoursLogId: string, eventTitle?: string) => {
-    if (!confirm(`Delete this hours entry${eventTitle ? ` for "${eventTitle}"` : ""}? This cannot be undone.`)) {
-      return;
-    }
+    // Show custom confirmation modal
+    setConfirmModalData({
+      title: "Delete Hours Entry",
+      message: `Delete this hours entry${eventTitle ? ` for "${eventTitle}"` : ""}? This cannot be undone.`,
+      onConfirm: async () => {
+        setShowConfirmModal(false);
+        await executeDeleteHoursLog(hoursLogId);
+      }
+    });
+    setShowConfirmModal(true);
+  };
 
+  const executeDeleteHoursLog = async (hoursLogId: string) => {
     setDeletingHourId(hoursLogId);
     try {
       const response = await fetch(`/api/hours?id=${hoursLogId}`, {
@@ -321,10 +341,12 @@ export default function AdminVolunteersPage() {
         await loadHoursLogs(selectedVolunteer.linkedUserId);
         await loadVolunteers(); // Refresh to update total hours
       } else {
-        alert(`Error: ${data.error}`);
+        setError(data.error);
+        setTimeout(() => setError(""), 3000);
       }
     } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      setError(error.message);
+      setTimeout(() => setError(""), 3000);
     } finally {
       setDeletingHourId(null);
     }
@@ -830,6 +852,15 @@ export default function AdminVolunteersPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
 }

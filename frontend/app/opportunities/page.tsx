@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { formatTime } from "@/lib/formatTime";
+import ConfirmModal from "@/components/ConfirmModal";
 
 type ViewMode = "calendar" | "list";
 
@@ -65,6 +66,14 @@ export default function Opportunities() {
   const [filterDateFrom, setFilterDateFrom] = useState<string>("");
   const [filterDateTo, setFilterDateTo] = useState<string>("");
   const [filterOnlyAvailable, setFilterOnlyAvailable] = useState<boolean>(false);
+
+  // Confirm modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ title: "", message: "", onConfirm: () => {} });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -288,7 +297,8 @@ export default function Opportunities() {
       await loadOpportunities();
       await loadRegistrations();
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
+      setTimeout(() => setError(""), 3000);
     } finally {
       setRegisteringId(null);
     }
@@ -297,7 +307,20 @@ export default function Opportunities() {
   const handleCancelRegistration = async (eventId: string) => {
     if (!user) return;
 
-    if (!confirm("Are you sure you want to cancel this registration?")) return;
+    // Show custom confirmation modal
+    setConfirmModalData({
+      title: "Cancel Registration",
+      message: "Are you sure you want to cancel this registration?",
+      onConfirm: async () => {
+        setShowConfirmModal(false);
+        await executeCancelRegistration(eventId);
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
+  const executeCancelRegistration = async (eventId: string) => {
+    if (!user) return;
 
     try {
       setCancellingEventId(eventId);
@@ -316,7 +339,8 @@ export default function Opportunities() {
       await loadOpportunities();
       await loadRegistrations();
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
+      setTimeout(() => setError(""), 3000);
     } finally {
       setCancellingEventId(null);
     }
@@ -1112,6 +1136,15 @@ export default function Opportunities() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={confirmModalData.onConfirm}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
 }
