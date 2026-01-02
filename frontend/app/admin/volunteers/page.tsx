@@ -746,7 +746,7 @@ export default function AdminVolunteersPage() {
                 >
                   Send Email
                 </button>
-                {user && isSuperAdmin(user.email) && selectedVolunteer.linkedUserId && selectedVolunteer.email !== user?.email && (
+                {user && user.email && isSuperAdmin(user.email) && selectedVolunteer.linkedUserId && selectedVolunteer.email !== user?.email && (
                   <>
                     <button
                       onClick={() => {
