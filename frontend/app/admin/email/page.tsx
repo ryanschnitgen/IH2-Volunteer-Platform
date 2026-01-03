@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin } from "@backend/lib/admin";
 
 interface EmailRecipient {
   email: string;

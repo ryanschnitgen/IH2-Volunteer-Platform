@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin } from "@backend/lib/admin";
 
 interface HoursLog {
   _id: string;

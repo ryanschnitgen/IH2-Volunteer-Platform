@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin } from "@backend/lib/admin";
 import Link from "next/link";
 
 export default function AdminDashboard() {

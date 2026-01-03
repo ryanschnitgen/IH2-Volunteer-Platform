@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import VolunteerProfile from '@/models/VolunteerProfile';
+import connectDB from '@backend/lib/db/mongodb';
+import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 
 // Link a volunteer profile to a Firebase user when they log in
 export async function POST(request: NextRequest) {

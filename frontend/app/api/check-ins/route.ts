@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import CheckIn from '@/models/CheckIn';
-import EventRegistration from '@/models/EventRegistration';
-import VolunteerProfile from '@/models/VolunteerProfile';
+import connectDB from '@backend/lib/db/mongodb';
+import CheckIn from '@backend/lib/models/CheckIn';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 
 // Levenshtein distance for fuzzy string matching
 function levenshteinDistance(str1: string, str2: string): number {
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
           } else if (match.profile) {
             // Create new registration from profile
             const profile = match.profile;
-            const event = await require('@/models/Event').default.findById(eventId);
+            const event = await require('@backend/lib/models/Event').default.findById(eventId);
 
             if (event) {
               const newRegistration = await EventRegistration.create({

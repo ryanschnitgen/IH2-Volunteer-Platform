@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "ES2017",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@backend/*": ["./*"]
+    }
+  },
+  "include": ["lib/**/*"],
+  "exclude": ["node_modules"]
+}

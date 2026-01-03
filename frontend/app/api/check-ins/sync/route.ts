@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import CheckIn from '@/models/CheckIn';
-import EventRegistration from '@/models/EventRegistration';
+import connectDB from '@backend/lib/db/mongodb';
+import CheckIn from '@backend/lib/models/CheckIn';
+import EventRegistration from '@backend/lib/models/EventRegistration';
 
 // Sync CheckIn records to EventRegistrations
 export async function POST(request: NextRequest) {

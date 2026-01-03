@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@backend/lib/db/mongodb';
 import mongoose from 'mongoose';
 
 // Force update using direct MongoDB connection

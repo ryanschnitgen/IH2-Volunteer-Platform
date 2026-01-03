@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Event from '@/models/Event';
-import EventRegistration from '@/models/EventRegistration';
-import VolunteerProfile from '@/models/VolunteerProfile';
-import User from '@/models/User';
+import connectDB from '@backend/lib/db/mongodb';
+import Event from '@backend/lib/models/Event';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
+import User from '@backend/lib/models/User';
 
 // Register for an event
 export async function POST(request: NextRequest) {

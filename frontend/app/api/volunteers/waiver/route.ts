@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import VolunteerProfile from "@/models/VolunteerProfile";
+import dbConnect from "@backend/lib/db/mongodb";
+import VolunteerProfile from "@backend/lib/models/VolunteerProfile";
 
 export async function POST(request: Request) {
   try {

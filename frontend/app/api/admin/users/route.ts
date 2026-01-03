@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import User from '@/models/User';
-import VolunteerProfile from '@/models/VolunteerProfile';
-import EventRegistration from '@/models/EventRegistration';
-import VolunteerHours from '@/models/VolunteerHours';
-import { adminAuth } from '@/lib/firebaseAdmin';
-import { isSuperAdmin } from '@/lib/admin';
+import connectDB from '@backend/lib/db/mongodb';
+import User from '@backend/lib/models/User';
+import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import VolunteerHours from '@backend/lib/models/VolunteerHours';
+import { adminAuth } from '@backend/lib/firebaseAdmin';
+import { isSuperAdmin } from '@backend/lib/admin';
 
 // Get all users
 export async function GET() {

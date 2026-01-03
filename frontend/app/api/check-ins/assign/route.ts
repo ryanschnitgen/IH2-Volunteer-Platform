@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import CheckIn from '@/models/CheckIn';
-import Event from '@/models/Event';
-import EventRegistration from '@/models/EventRegistration';
-import VolunteerProfile from '@/models/VolunteerProfile';
+import connectDB from '@backend/lib/db/mongodb';
+import CheckIn from '@backend/lib/models/CheckIn';
+import Event from '@backend/lib/models/Event';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 
 // POST - Manually assign check-in to an event
 export async function POST(request: NextRequest) {

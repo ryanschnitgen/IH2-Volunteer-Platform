@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import ClockInOut from '@/models/ClockInOut';
-import HoursLog from '@/models/HoursLog';
+import connectDB from '@backend/lib/db/mongodb';
+import ClockInOut from '@backend/lib/models/ClockInOut';
+import HoursLog from '@backend/lib/models/HoursLog';
 
 // Clock in
 export async function POST(request: NextRequest) {

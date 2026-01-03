@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import VolunteerProfile from '@/models/VolunteerProfile';
-import HoursLog from '@/models/HoursLog';
+import connectDB from '@backend/lib/db/mongodb';
+import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
+import HoursLog from '@backend/lib/models/HoursLog';
 
 export async function GET(request: NextRequest) {
   try {

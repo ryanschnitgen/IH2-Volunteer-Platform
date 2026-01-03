@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin } from "@backend/lib/admin";
 
 export default function Navigation() {
   const pathname = usePathname();

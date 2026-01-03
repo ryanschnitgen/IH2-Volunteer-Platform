@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import EventRegistration from '@/models/EventRegistration';
+import connectDB from '@backend/lib/db/mongodb';
+import EventRegistration from '@backend/lib/models/EventRegistration';
 
 // Get all event registrations across all events
 export async function GET(request: NextRequest) {

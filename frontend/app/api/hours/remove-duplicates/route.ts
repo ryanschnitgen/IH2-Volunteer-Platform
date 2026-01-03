@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import HoursLog from '@/models/HoursLog';
+import connectDB from '@backend/lib/db/mongodb';
+import HoursLog from '@backend/lib/models/HoursLog';
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import HoursLog from '@/models/HoursLog';
+import connectDB from '@backend/lib/db/mongodb';
+import HoursLog from '@backend/lib/models/HoursLog';
 
 // Get all hours logs (for admin stats)
 export async function GET(request: NextRequest) {

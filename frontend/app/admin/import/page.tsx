@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin } from "@backend/lib/admin";
 
 interface ImportResults {
   total: number;

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import CheckIn from '@/models/CheckIn';
-import EventRegistration from '@/models/EventRegistration';
-import VolunteerProfile from '@/models/VolunteerProfile';
-import Event from '@/models/Event';
-import HoursLog from '@/models/HoursLog';
+import connectDB from '@backend/lib/db/mongodb';
+import CheckIn from '@backend/lib/models/CheckIn';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
+import Event from '@backend/lib/models/Event';
+import HoursLog from '@backend/lib/models/HoursLog';
 
 // Levenshtein distance for fuzzy string matching
 function levenshteinDistance(str1: string, str2: string): number {

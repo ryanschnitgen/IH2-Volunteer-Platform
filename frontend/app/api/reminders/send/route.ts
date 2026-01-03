@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Event from '@/models/Event';
-import EventRegistration from '@/models/EventRegistration';
-import { sendEmail } from '@/lib/email';
+import connectDB from '@backend/lib/db/mongodb';
+import Event from '@backend/lib/models/Event';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import { sendEmail } from '@backend/lib/email';
 
 // Send 24-hour reminder emails for upcoming events
 // This endpoint should be called by a cron job once per day

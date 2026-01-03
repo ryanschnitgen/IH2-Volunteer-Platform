@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import EventRegistration from '@/models/EventRegistration';
-import CheckIn from '@/models/CheckIn';
+import connectDB from '@backend/lib/db/mongodb';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import CheckIn from '@backend/lib/models/CheckIn';
 
 // Migrate all registrations to have checkedIn field
 export async function POST(request: NextRequest) {

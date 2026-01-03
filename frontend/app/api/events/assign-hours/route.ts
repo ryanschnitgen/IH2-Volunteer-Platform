@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Event from '@/models/Event';
-import EventRegistration from '@/models/EventRegistration';
-import HoursLog from '@/models/HoursLog';
+import connectDB from '@backend/lib/db/mongodb';
+import Event from '@backend/lib/models/Event';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import HoursLog from '@backend/lib/models/HoursLog';
 
 export async function POST(request: NextRequest) {
   try {

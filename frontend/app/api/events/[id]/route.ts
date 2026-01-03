@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Event from '@/models/Event';
+import connectDB from '@backend/lib/db/mongodb';
+import Event from '@backend/lib/models/Event';
 
 export async function GET(
   request: NextRequest,
