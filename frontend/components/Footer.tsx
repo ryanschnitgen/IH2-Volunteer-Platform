@@ -80,12 +80,15 @@ export default function Footer() {
             <p className="text-gray-400 text-sm">
               &copy; {currentYear} Inspired Hearts and Hands (IH2). All rights reserved.
             </p>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap gap-4 md:gap-6 justify-center md:justify-end">
               <a href="https://inspiredheartsandhands.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-400 transition text-sm">
                 Visit Main Website
               </a>
               <Link href="/privacy-policy" className="text-gray-400 hover:text-primary-400 transition text-sm">
                 Privacy Policy
+              </Link>
+              <Link href="/terms-of-service" className="text-gray-400 hover:text-primary-400 transition text-sm">
+                Terms of Service
               </Link>
             </div>
           </div>
