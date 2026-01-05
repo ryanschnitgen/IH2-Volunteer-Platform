@@ -24,12 +24,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('📧 Sending contact form email...');
-    console.log('⚠️  NOTE: Using test domain "onboarding@resend.dev" has limitations.');
-    console.log('💡 For production, verify a custom domain at https://resend.com/domains');
 
     // Send email to admin
     const data = await resend.emails.send({
-      from: 'IH2 Volunteer Portal <onboarding@resend.dev>',
+      from: 'IH2 Volunteer Portal <info@inspiredheartsandhands.com>',
       to: ['info@inspiredheartsandhands.com'],
       subject: `Contact Form: Message from ${name}`,
       replyTo: email,

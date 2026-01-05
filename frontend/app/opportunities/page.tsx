@@ -37,7 +37,7 @@ interface Registration {
 }
 
 export default function Opportunities() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, waiverSigned } = useAuth();
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -122,6 +122,20 @@ export default function Opportunities() {
   };
 
   const openRegistrationModal = (opportunity: Opportunity) => {
+    // Check if waiver is signed before allowing registration
+    if (!waiverSigned) {
+      setConfirmModalData({
+        title: "Waiver Required",
+        message: "You must sign the volunteer waiver before registering for events. You'll be redirected to the waiver page.",
+        onConfirm: () => {
+          setShowConfirmModal(false);
+          router.push("/waiver");
+        }
+      });
+      setShowConfirmModal(true);
+      return;
+    }
+
     setSelectedEvent(opportunity);
     setShowRegistrationModal(true);
     setIsGroupRegistration(false);

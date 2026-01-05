@@ -10,7 +10,7 @@ import { isAdmin } from "@backend/lib/admin";
 export default function Navigation() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, waiverSigned } = useAuth();
 
   const baseNavItems = [
     { href: "/", label: "Home" },
@@ -57,12 +57,23 @@ export default function Navigation() {
             {!loading && (
               user ? (
                 <div className="flex items-center gap-4">
-                  <Link
-                    href="/profile"
-                    className="text-sm text-gray-700 hover:text-primary-600 transition font-medium"
-                  >
-                    {user.displayName || user.email}
-                  </Link>
+                  <div className="flex flex-col items-end">
+                    <Link
+                      href="/profile"
+                      className="text-sm text-gray-700 hover:text-primary-600 transition font-medium"
+                    >
+                      {user.displayName || user.email}
+                    </Link>
+                    {!waiverSigned && (
+                      <Link
+                        href="/waiver"
+                        className="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1"
+                        title="You must sign the waiver to register for events"
+                      >
+                        ⚠️ Sign Waiver Required
+                      </Link>
+                    )}
+                  </div>
                   <button
                     onClick={logout}
                     className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
@@ -132,6 +143,15 @@ export default function Navigation() {
                   >
                     {user.displayName || user.email}
                   </Link>
+                  {!waiverSigned && (
+                    <Link
+                      href="/waiver"
+                      className="block text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      ⚠️ Sign Waiver Required
+                    </Link>
+                  )}
                   <button
                     onClick={logout}
                     className="w-full bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition"

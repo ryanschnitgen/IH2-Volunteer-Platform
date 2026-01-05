@@ -48,6 +48,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user has signed waiver (skip for retroactive admin registrations)
+    if (!retroactive) {
+      const volunteerProfile = await VolunteerProfile.findOne({ linkedUserId: finalUserId });
+      if (!volunteerProfile || !volunteerProfile.waiverAccepted) {
+        return NextResponse.json(
+          { error: 'You must sign the volunteer waiver before registering for events' },
+          { status: 403 }
+        );
+      }
+    }
+
     // Calculate total attendees (primary registrant + additional)
     const numAdditional = additionalAttendees || 0;
     const totalAttendees = 1 + numAdditional;

@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import { NextRequest, NextResponse } from 'next/server';
 
-const resend = new Resend(process.env.NEXT_PUBLIC_RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if API key is configured
-    if (!process.env.NEXT_PUBLIC_RESEND_API_KEY) {
+    if (!process.env.RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY is not configured in .env.local');
       return NextResponse.json(
         { error: 'Email service is not configured. Please add RESEND_API_KEY to .env.local' },
