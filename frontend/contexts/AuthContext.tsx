@@ -51,6 +51,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               displayName: user.displayName || user.email?.split('@')[0],
             }),
           });
+
+          // Auto-link to volunteer profile if one exists
+          await fetch('/api/volunteers/link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.uid,
+              email: user.email,
+            }),
+          });
         } catch (error) {
           console.error('Error syncing user to MongoDB:', error);
         }
