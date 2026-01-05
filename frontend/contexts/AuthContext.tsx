@@ -128,11 +128,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    const actionCodeSettings = {
-      url: `${window.location.origin}/login`,
-      handleCodeInApp: false,
-    };
-    await sendPasswordResetEmail(auth, email, actionCodeSettings);
+    try {
+      console.log('🔐 Starting password reset for:', email);
+      console.log('🌐 Origin:', window.location.origin);
+      console.log('🔍 User agent:', navigator.userAgent);
+
+      const actionCodeSettings = {
+        url: `${window.location.origin}/login`,
+        handleCodeInApp: false,
+      };
+
+      console.log('📧 Sending password reset email with settings:', actionCodeSettings);
+
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+
+      console.log('✅ Firebase sendPasswordResetEmail completed successfully');
+      console.log('⏰ Email should arrive within 2-5 minutes');
+      console.log('📬 Check spam folder if not in inbox');
+    } catch (error: any) {
+      console.error('❌ Password reset error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      throw error;
+    }
   };
 
   const value = {

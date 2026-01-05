@@ -18,11 +18,18 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
+      console.log('🚀 Initiating password reset for:', email);
       await resetPassword(email);
+      console.log('✓ Password reset request completed');
       setSuccess(true);
       setEmail("");
     } catch (err: any) {
-      console.error("Password reset error:", err);
+      console.error("❌ Password reset error caught:", err);
+      console.error("Error details:", {
+        code: err.code,
+        message: err.message,
+        stack: err.stack
+      });
 
       // Provide more user-friendly error messages
       let errorMessage = "Failed to send password reset email";
@@ -71,6 +78,16 @@ export default function ResetPassword() {
               <p className="text-sm mt-1 font-medium">
                 Don't see it? Check your spam/junk folder.
               </p>
+              <details className="mt-3 text-xs">
+                <summary className="cursor-pointer font-semibold">Troubleshooting (click to expand)</summary>
+                <div className="mt-2 space-y-1 bg-white p-2 rounded">
+                  <p>• Wait 5-10 minutes for email to arrive</p>
+                  <p>• Check ALL folders including Spam/Junk/Promotions</p>
+                  <p>• Search inbox for "noreply@ih2-volunteer-portal-3f4d1.firebaseapp.com"</p>
+                  <p>• Open browser console (F12) and check for error messages</p>
+                  <p>• Try from a different browser or device</p>
+                </div>
+              </details>
             </div>
           )}
 
