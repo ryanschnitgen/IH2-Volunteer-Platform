@@ -28,21 +28,27 @@ export default function ResetPassword() {
         setEmail("");
       } catch (clientError: any) {
         console.warn('⚠️ Client-side password reset failed, trying server-side:', clientError);
+        console.log('Client error details:', clientError.code, clientError.message);
 
         // Fallback to server-side password reset
+        console.log('🔄 Calling server-side password reset API...');
         const response = await fetch('/api/auth/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
         });
 
+        console.log('📡 Server response status:', response.status);
+
         const data = await response.json();
+        console.log('📦 Server response data:', data);
 
         if (!response.ok) {
+          console.error('❌ Server-side reset failed:', data);
           throw new Error(data.error || 'Failed to send password reset email');
         }
 
-        console.log('✓ Server-side password reset completed');
+        console.log('✓ Server-side password reset completed successfully');
         setSuccess(true);
         setEmail("");
       }
