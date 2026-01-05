@@ -19,10 +19,33 @@ export default function ResetPassword() {
 
     try {
       console.log('🚀 Initiating password reset for:', email);
-      await resetPassword(email);
-      console.log('✓ Password reset request completed');
-      setSuccess(true);
-      setEmail("");
+
+      // Try client-side password reset first
+      try {
+        await resetPassword(email);
+        console.log('✓ Client-side password reset completed');
+        setSuccess(true);
+        setEmail("");
+      } catch (clientError: any) {
+        console.warn('⚠️ Client-side password reset failed, trying server-side:', clientError);
+
+        // Fallback to server-side password reset
+        const response = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to send password reset email');
+        }
+
+        console.log('✓ Server-side password reset completed');
+        setSuccess(true);
+        setEmail("");
+      }
     } catch (err: any) {
       console.error("❌ Password reset error caught:", err);
       console.error("Error details:", {
