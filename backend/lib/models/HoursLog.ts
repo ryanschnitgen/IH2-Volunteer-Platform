@@ -20,6 +20,7 @@ export interface IHoursLog {
   category?: string; // Type of activity
   description?: string; // Activity description
   source?: string; // Where this log came from (e.g., "Volunteer Sign-In Form")
+  matchType?: string; // How the volunteer was matched (email, exact-name, fuzzy-name, new)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -101,6 +102,10 @@ const HoursLogSchema = new mongoose.Schema<IHoursLog>(
     source: {
       type: String,
       default: 'Manual',
+    },
+    matchType: {
+      type: String,
+      enum: ['email', 'exact-name', 'fuzzy-name', 'new', null],
     },
   },
   {
