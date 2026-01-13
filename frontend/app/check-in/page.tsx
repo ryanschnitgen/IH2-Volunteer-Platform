@@ -1,20 +1,40 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function VolunteerCheckIn() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get("eventId");
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [eventTitle, setEventTitle] = useState("");
+  const [matchedEventTitle, setMatchedEventTitle] = useState("");
+  const [autoMatched, setAutoMatched] = useState(false);
 
   // Form data
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [hasGuests, setHasGuests] = useState<boolean | null>(null);
   const [guestCount, setGuestCount] = useState(0);
+
+  // Load event details if eventId is provided
+  useEffect(() => {
+    if (eventId) {
+      fetch(`/api/events/${eventId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.event) {
+            setEventTitle(data.event.title);
+          }
+        })
+        .catch(err => console.error("Failed to load event:", err));
+    }
+  }, [eventId]);
 
   const handleSection1Submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +90,7 @@ export default function VolunteerCheckIn() {
           hasGuests: hasGuests || false,
           guestCount: hasGuests ? guestCount : 0,
           timestamp: new Date().toISOString(),
+          eventId: eventId || undefined,
         }),
       });
 
@@ -77,6 +98,14 @@ export default function VolunteerCheckIn() {
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to submit check-in");
+      }
+
+      // Capture the matched event info
+      if (data.eventTitle) {
+        setMatchedEventTitle(data.eventTitle);
+      }
+      if (data.autoMatched) {
+        setAutoMatched(true);
       }
 
       setSuccess(true);
@@ -108,6 +137,12 @@ export default function VolunteerCheckIn() {
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Thank You!</h2>
+            {matchedEventTitle && (
+              <p className="text-lg font-semibold text-primary-600 mb-2">
+                {matchedEventTitle}
+                {autoMatched && <span className="text-sm text-gray-500 block">Auto-matched to this event</span>}
+              </p>
+            )}
             <p className="text-gray-600 text-lg">
               {hasGuests
                 ? `Checked in: You + ${guestCount} guest${guestCount > 1 ? 's' : ''}`
@@ -130,6 +165,11 @@ export default function VolunteerCheckIn() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Volunteer Sign In
           </h1>
+          {eventTitle && (
+            <p className="text-lg font-semibold text-primary-600 mb-2">
+              {eventTitle}
+            </p>
+          )}
           <p className="text-gray-600">
             Section {step} of 2
           </p>

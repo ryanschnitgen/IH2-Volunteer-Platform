@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@backend/lib/db/mongodb';
+import dbConnect from '@backend/lib/db/mongodb';
 import Event from '@backend/lib/models/Event';
 
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectDB();
+    await dbConnect();
 
     const event = await Event.findById(id);
 
