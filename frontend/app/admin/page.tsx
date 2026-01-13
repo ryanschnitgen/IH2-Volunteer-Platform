@@ -238,6 +238,33 @@ export default function AdminDashboard() {
             </div>
           </Link>
 
+          {/* Import Hours Card */}
+          <Link href="/admin/import-hours">
+            <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <div className="flex items-center mb-4">
+                <div className="bg-teal-100 rounded-lg p-3 mr-4">
+                  <svg
+                    className="w-8 h-8 text-teal-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Import Hours</h2>
+              </div>
+              <p className="text-gray-600">
+                Upload Excel file with historical volunteer hours from legacy system.
+              </p>
+            </div>
+          </Link>
+
           {/* Volunteer Analytics Card */}
           <Link href="/admin/analytics">
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer h-full">
