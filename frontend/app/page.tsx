@@ -28,20 +28,38 @@ export default function Home() {
 
   const loadCommunityHours = async () => {
     try {
-      // Fetch all hours logs for 2026
-      const response = await fetch('/api/hours/all');
-      const data = await response.json();
+      const currentYear = new Date().getFullYear();
 
-      if (response.ok) {
-        const currentYear = new Date().getFullYear();
-        const totalHours = (data.hoursLogs || [])
+      // Fetch both hours logs and event registrations
+      const [hoursRes, registrationsRes] = await Promise.all([
+        fetch('/api/hours/all'),
+        fetch('/api/events/registrations/all')
+      ]);
+
+      const hoursData = await hoursRes.json();
+      const registrationsData = await registrationsRes.json();
+
+      if (hoursRes.ok && registrationsRes.ok) {
+        // Calculate event hours (from registrations)
+        const eventHours = (registrationsData.registrations || [])
+          .filter((reg: any) => {
+            const eventDate = new Date(reg.eventDate);
+            return eventDate.getFullYear() === currentYear &&
+                   reg.hoursCompleted > 0 &&
+                   (reg.checkedIn || reg.attended) &&
+                   reg.cancelled !== true;
+          })
+          .reduce((sum: number, reg: any) => sum + reg.hoursCompleted, 0);
+
+        // Calculate manual hours (exclude auto-assigned to avoid double-counting)
+        const manualHours = (hoursData.hoursLogs || [])
           .filter((log: any) => {
             const logDate = new Date(log.date);
-            return logDate.getFullYear() === currentYear;
+            return logDate.getFullYear() === currentYear && !log.autoAssigned;
           })
           .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
 
-        setCommunityHours(totalHours);
+        setCommunityHours(eventHours + manualHours);
       }
     } catch (err) {
       console.error("Error loading community hours:", err);
