@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@backend/lib/db/mongodb';
 import HoursLog from '@backend/lib/models/HoursLog';
 import EventRegistration from '@backend/lib/models/EventRegistration';
+import Event from '@backend/lib/models/Event';
 
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
     const currentYear = new Date().getFullYear();
+
+    // Count total events
+    const totalEvents = await Event.countDocuments();
+    const eventsThisYear = await Event.countDocuments({
+      date: {
+        $gte: new Date(`${currentYear}-01-01`),
+        $lte: new Date(`${currentYear}-12-31`),
+      }
+    });
 
     // Get all hours logs for current year
     const allHoursLogs = await HoursLog.find({
@@ -42,6 +52,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       year: currentYear,
+      events: {
+        total: totalEvents,
+        thisYear: eventsThisYear,
+      },
       hoursLogs: {
         total: allHoursLogs.length,
         autoAssigned: {
@@ -50,8 +64,11 @@ export async function GET(request: NextRequest) {
           samples: autoAssignedLogs.slice(0, 5).map(log => ({
             date: log.date,
             hours: log.hours,
+            eventId: log.eventId,
             eventTitle: log.eventTitle,
             source: log.source,
+            userId: log.userId,
+            userEmail: log.userEmail,
           })),
         },
         manual: {
@@ -60,6 +77,7 @@ export async function GET(request: NextRequest) {
           samples: manualLogs.slice(0, 5).map(log => ({
             date: log.date,
             hours: log.hours,
+            eventId: log.eventId,
             eventTitle: log.eventTitle,
             source: log.source,
             category: log.category,
