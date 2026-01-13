@@ -264,33 +264,6 @@ export default function AdminDashboard() {
               </p>
             </div>
           </Link>
-
-          {/* Database Cleanup Card */}
-          <Link href="/admin/cleanup">
-            <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer h-full">
-              <div className="flex items-center mb-4">
-                <div className="bg-red-100 rounded-lg p-3 mr-4">
-                  <svg
-                    className="w-8 h-8 text-red-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-gray-900">Database Cleanup</h2>
-              </div>
-              <p className="text-gray-600">
-                Remove orphaned data from deleted events to fix hour calculations.
-              </p>
-            </div>
-          </Link>
         </div>
 
         {/* Quick Stats */}
