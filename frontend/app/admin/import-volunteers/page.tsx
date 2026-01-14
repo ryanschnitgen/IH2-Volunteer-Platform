@@ -229,7 +229,7 @@ export default function ImportVolunteers() {
             <h3 className="font-bold text-lg mb-2">✓ Import Successful</h3>
             <div className="space-y-1 text-sm">
               <p><strong>Total Rows:</strong> {result.results.total}</p>
-              <p><strong>Volunteers Updated with Usernames:</strong> {result.results.updated}</p>
+              <p><strong>Volunteers Updated (Email + Username):</strong> {result.results.updated}</p>
               <p><strong>New Volunteers Created:</strong> {result.results.created}</p>
               {result.results.skipped > 0 && (
                 <p className="text-orange-700"><strong>Skipped:</strong> {result.results.skipped}</p>
@@ -347,7 +347,7 @@ export default function ImportVolunteers() {
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
                       <div className="bg-white rounded p-3">
                         <div className="text-2xl font-bold text-green-600">{matchPreview.willUpdate}</div>
-                        <div className="text-sm text-gray-600">Will Add Username To</div>
+                        <div className="text-sm text-gray-600">Will Update (Email + Username)</div>
                       </div>
                       <div className="bg-white rounded p-3">
                         <div className="text-2xl font-bold text-blue-600">{matchPreview.willCreate}</div>
@@ -358,14 +358,15 @@ export default function ImportVolunteers() {
                     {matchPreview.updateList.length > 0 && (
                       <details className="mb-2">
                         <summary className="cursor-pointer font-semibold text-green-800 hover:text-green-900">
-                          ✓ {matchPreview.willUpdate} Volunteers Will Get Username Added
+                          ✓ {matchPreview.willUpdate} Volunteers Will Be Updated
                         </summary>
                         <div className="mt-2 max-h-48 overflow-auto">
                           <table className="min-w-full text-xs">
                             <thead className="bg-green-100">
                               <tr>
                                 <th className="border px-2 py-1 text-left">Name</th>
-                                <th className="border px-2 py-1 text-left">Will Add Username</th>
+                                <th className="border px-2 py-1 text-left">CSV Email</th>
+                                <th className="border px-2 py-1 text-left">CSV Username</th>
                                 <th className="border px-2 py-1 text-left">Current Email</th>
                                 <th className="border px-2 py-1 text-left">Current Username</th>
                               </tr>
@@ -374,7 +375,8 @@ export default function ImportVolunteers() {
                               {matchPreview.updateList.map((v: any, i: number) => (
                                 <tr key={i} className="hover:bg-green-50">
                                   <td className="border px-2 py-1">{v.name}</td>
-                                  <td className="border px-2 py-1 font-semibold text-green-700">{v.username || '-'}</td>
+                                  <td className="border px-2 py-1 font-semibold text-blue-700">{v.email || '(no email)'}</td>
+                                  <td className="border px-2 py-1 font-semibold text-green-700">{v.username || '(no username)'}</td>
                                   <td className="border px-2 py-1">{v.currentEmail}</td>
                                   <td className="border px-2 py-1">{v.currentUsername}</td>
                                 </tr>
@@ -388,23 +390,23 @@ export default function ImportVolunteers() {
                     {matchPreview.createList && matchPreview.createList.length > 0 && (
                       <details>
                         <summary className="cursor-pointer font-semibold text-blue-800 hover:text-blue-900">
-                          + {matchPreview.willCreate} Volunteers Will Be Created (No Email Match)
+                          + {matchPreview.willCreate} New Volunteers Will Be Created
                         </summary>
                         <div className="mt-2 max-h-48 overflow-auto">
                           <table className="min-w-full text-xs">
                             <thead className="bg-blue-100">
                               <tr>
                                 <th className="border px-2 py-1 text-left">Name</th>
-                                <th className="border px-2 py-1 text-left">Email</th>
-                                <th className="border px-2 py-1 text-left">Username</th>
+                                <th className="border px-2 py-1 text-left">CSV Email</th>
+                                <th className="border px-2 py-1 text-left">CSV Username</th>
                               </tr>
                             </thead>
                             <tbody className="bg-white">
                               {matchPreview.createList.map((v: any, i: number) => (
                                 <tr key={i} className="hover:bg-blue-50">
                                   <td className="border px-2 py-1">{v.name}</td>
-                                  <td className="border px-2 py-1">{v.email}</td>
-                                  <td className="border px-2 py-1">{v.username}</td>
+                                  <td className="border px-2 py-1 font-semibold text-blue-700">{v.email}</td>
+                                  <td className="border px-2 py-1 font-semibold text-green-700">{v.username}</td>
                                 </tr>
                               ))}
                             </tbody>
