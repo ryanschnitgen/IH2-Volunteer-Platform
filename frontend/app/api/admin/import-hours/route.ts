@@ -37,11 +37,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       totalVolunteers: allVolunteers.length,
-      volunteers: allVolunteers.map(v => ({
-        name: `${v.firstName} ${v.lastName}`,
-        email: v.email,
-        hasAccount: !!v.linkedUserId,
-      })),
+      volunteers: allVolunteers.map(v => {
+        // Extract username from legacy email (username@legacy.ih2.org)
+        let username = undefined;
+        if (v.email.endsWith('@legacy.ih2.org')) {
+          username = v.email.replace('@legacy.ih2.org', '');
+        }
+        return {
+          name: `${v.firstName} ${v.lastName}`,
+          email: v.email,
+          hasAccount: !!v.linkedUserId,
+          username,
+        };
+      }),
     });
   } catch (error: any) {
     console.error('Preview error:', error);
@@ -105,18 +113,30 @@ export async function POST(request: NextRequest) {
         // Find or create volunteer profile
         const firstName = row.FirstName.trim();
         const lastName = row.LastName.trim();
+        const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
 
-        // Try to match by name (case-insensitive)
-        let volunteer = await VolunteerProfile.findOne({
-          firstName: { $regex: new RegExp(`^${firstName}$`, 'i') },
-          lastName: { $regex: new RegExp(`^${lastName}$`, 'i') },
-        });
+        // Try to match by username first (most reliable)
+        let volunteer = null;
+        if (username) {
+          const legacyEmail = `${username}@legacy.ih2.org`;
+          volunteer = await VolunteerProfile.findOne({
+            email: legacyEmail,
+          });
+        }
+
+        // Fall back to name matching if username not found
+        if (!volunteer) {
+          volunteer = await VolunteerProfile.findOne({
+            firstName: { $regex: new RegExp(`^${firstName}$`, 'i') },
+            lastName: { $regex: new RegExp(`^${lastName}$`, 'i') },
+          });
+        }
 
         if (!volunteer) {
           // Create new volunteer profile ONLY if not found
           // Use username if available, otherwise create a legacy email
-          const legacyEmail = row.Username
-            ? `${row.Username.toLowerCase().replace(/\s+/g, '')}@legacy.ih2.org`
+          const legacyEmail = username
+            ? `${username}@legacy.ih2.org`
             : `${firstName.toLowerCase()}.${lastName.toLowerCase()}@legacy.ih2.org`;
 
           volunteer = await VolunteerProfile.create({

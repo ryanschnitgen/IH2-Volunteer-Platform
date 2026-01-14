@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { isAdmin } from "@backend/lib/admin";
 import * as XLSX from 'xlsx';
 
-export default function ImportHours() {
+export default function ImportVolunteers() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -56,19 +56,24 @@ export default function ImportHours() {
     setLoadingMatch(true);
     try {
       // Get all existing volunteers from database
-      const response = await fetch(`/api/admin/import-hours?userEmail=${encodeURIComponent(user.email)}`);
+      const response = await fetch(`/api/admin/import-volunteers?userEmail=${encodeURIComponent(user.email)}`);
       const dbData = await response.json();
 
       if (!response.ok) {
         throw new Error(dbData.error || "Failed to load volunteers");
       }
 
-      // Create maps for volunteers by username and by name
+      // Create maps for volunteers by username, email, and name
       const dbVolunteersByUsername = new Map();
+      const dbVolunteersByEmail = new Map();
       const dbVolunteersByName = new Map();
+
       dbData.volunteers.forEach((v: any) => {
         if (v.username) {
           dbVolunteersByUsername.set(v.username.toLowerCase(), v);
+        }
+        if (v.email) {
+          dbVolunteersByEmail.set(v.email.toLowerCase(), v);
         }
         const nameKey = v.name.toLowerCase().trim();
         dbVolunteersByName.set(nameKey, v);
@@ -80,48 +85,64 @@ export default function ImportHours() {
         if (row.FirstName && row.LastName) {
           const name = `${row.FirstName} ${row.LastName}`;
           const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
-          const key = username || name.toLowerCase().trim();
+          const email = row.EmailAddress?.trim().toLowerCase();
+          const key = username || email || name.toLowerCase().trim();
+
           if (!excelVolunteers.has(key)) {
             excelVolunteers.set(key, {
               name,
               firstName: row.FirstName,
               lastName: row.LastName,
               username: username,
+              email: email,
             });
           }
         }
       });
 
       // Check matches
-      const matched = [];
-      const notFound = [];
+      const willUpdate = [];
+      const willCreate = [];
 
       for (const [key, excelVol] of excelVolunteers.entries()) {
-        // Try username match first
+        // Try username match first (most reliable)
         let dbVol = null;
+        let matchType = '';
+
         if (excelVol.username) {
           dbVol = dbVolunteersByUsername.get(excelVol.username);
+          if (dbVol) matchType = 'username';
         }
+
+        // Try email match
+        if (!dbVol && excelVol.email) {
+          dbVol = dbVolunteersByEmail.get(excelVol.email);
+          if (dbVol) matchType = 'email';
+        }
+
         // Fall back to name match
         if (!dbVol) {
           const nameKey = excelVol.name.toLowerCase().trim();
           dbVol = dbVolunteersByName.get(nameKey);
+          if (dbVol) matchType = 'name';
         }
 
         if (dbVol) {
-          matched.push({
+          willUpdate.push({
             name: excelVol.name,
-            email: dbVol.email,
-            hasAccount: dbVol.hasAccount,
             username: excelVol.username,
-            matchType: excelVol.username && dbVolunteersByUsername.has(excelVol.username) ? 'username' : 'name',
-            status: 'match',
+            email: excelVol.email || dbVol.email,
+            currentEmail: dbVol.email,
+            hasAccount: dbVol.hasAccount,
+            matchType,
+            status: 'update',
           });
         } else {
-          notFound.push({
+          willCreate.push({
             name: excelVol.name,
             username: excelVol.username,
-            status: 'new',
+            email: excelVol.email,
+            status: 'create',
           });
         }
       }
@@ -129,10 +150,10 @@ export default function ImportHours() {
       setMatchPreview({
         totalRows: excelData.length,
         uniqueVolunteers: excelVolunteers.size,
-        matched: matched.length,
-        notFound: notFound.length,
-        matchedList: matched,
-        notFoundList: notFound,
+        willUpdate: willUpdate.length,
+        willCreate: willCreate.length,
+        updateList: willUpdate,
+        createList: willCreate,
       });
     } catch (err: any) {
       console.error("Failed to load match preview:", err);
@@ -156,7 +177,7 @@ export default function ImportHours() {
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
       // Send to API
-      const response = await fetch("/api/admin/import-hours", {
+      const response = await fetch("/api/admin/import-volunteers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -168,12 +189,12 @@ export default function ImportHours() {
       const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(responseData.error || "Failed to import hours");
+        throw new Error(responseData.error || "Failed to import volunteers");
       }
 
       setResult(responseData);
     } catch (err: any) {
-      setError(err.message || "Failed to import hours");
+      setError(err.message || "Failed to import volunteers");
     } finally {
       setImporting(false);
     }
@@ -195,10 +216,10 @@ export default function ImportHours() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Import Historical Hours
+          Import Volunteers
         </h1>
         <p className="text-gray-600 mb-8">
-          Upload an Excel file with volunteer hours from the legacy system
+          Upload an Excel file with volunteer information to create or update volunteer profiles
         </p>
 
         {error && (
@@ -212,10 +233,9 @@ export default function ImportHours() {
             <h3 className="font-bold text-lg mb-2">✓ Import Successful</h3>
             <div className="space-y-1 text-sm">
               <p><strong>Total Rows:</strong> {result.results.total}</p>
-              <p><strong>Hours Imported:</strong> {result.results.imported}</p>
-              <p><strong>Volunteers Matched:</strong> {result.results.matched}</p>
-              <p><strong>New Volunteers Created:</strong> {result.results.created}</p>
-              <p><strong>Skipped (duplicates/invalid):</strong> {result.results.skipped}</p>
+              <p><strong>Volunteers Updated:</strong> {result.results.updated}</p>
+              <p><strong>Volunteers Created:</strong> {result.results.created}</p>
+              <p><strong>Skipped (invalid):</strong> {result.results.skipped}</p>
               {result.results.errors.length > 0 && (
                 <p className="text-red-700"><strong>Errors:</strong> {result.results.errors.length}</p>
               )}
@@ -230,31 +250,6 @@ export default function ImportHours() {
             )}
           </div>
         )}
-
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Expected File Format
-          </h2>
-          <div className="space-y-4 text-gray-700">
-            <p>Your Excel file should have these columns:</p>
-            <ul className="list-disc list-inside space-y-2 ml-4">
-              <li><strong>DateVolunteered</strong> - Date in M/D/YY format (e.g., 12/11/25)</li>
-              <li><strong>HoursWorked</strong> - Number of hours (e.g., 3, 2.5)</li>
-              <li><strong>FirstName</strong> - Volunteer's first name</li>
-              <li><strong>LastName</strong> - Volunteer's last name</li>
-              <li><strong>ActivityCategoryName</strong> - Category (e.g., "Angel Tree")</li>
-              <li><strong>ActivityName</strong> - Activity description</li>
-              <li><strong>Username</strong> - (Optional) Legacy username</li>
-            </ul>
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mt-4">
-              <p className="font-semibold text-blue-800">ℹ️ Note</p>
-              <p className="text-blue-700 text-sm">
-                The system will automatically match volunteers by name. If a volunteer
-                doesn't exist, a new profile will be created with a legacy email address.
-              </p>
-            </div>
-          </div>
-        </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
@@ -288,21 +283,21 @@ export default function ImportHours() {
                     <table className="min-w-full text-sm border">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="border px-2 py-1">Date</th>
-                          <th className="border px-2 py-1">Hours</th>
                           <th className="border px-2 py-1">Name</th>
-                          <th className="border px-2 py-1">Category</th>
-                          <th className="border px-2 py-1">Activity</th>
+                          <th className="border px-2 py-1">Username</th>
+                          <th className="border px-2 py-1">Email</th>
+                          <th className="border px-2 py-1">Phone</th>
+                          <th className="border px-2 py-1">Hours Worked</th>
                         </tr>
                       </thead>
                       <tbody>
                         {preview.map((row: any, i) => (
                           <tr key={i} className="hover:bg-gray-50">
-                            <td className="border px-2 py-1">{row.DateVolunteered}</td>
-                            <td className="border px-2 py-1">{row.HoursWorked}</td>
                             <td className="border px-2 py-1">{row.FirstName} {row.LastName}</td>
-                            <td className="border px-2 py-1">{row.ActivityCategoryName}</td>
-                            <td className="border px-2 py-1">{row.ActivityName}</td>
+                            <td className="border px-2 py-1">{row.Username || '-'}</td>
+                            <td className="border px-2 py-1">{row.EmailAddress || '-'}</td>
+                            <td className="border px-2 py-1">{row.CellPhone || '-'}</td>
+                            <td className="border px-2 py-1">{row.HoursWorked || 0}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -320,25 +315,21 @@ export default function ImportHours() {
                 {matchPreview && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h3 className="font-bold text-blue-900 mb-3">📊 Match Analysis</h3>
-                    <div className="grid md:grid-cols-3 gap-4 mb-4">
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
                       <div className="bg-white rounded p-3">
-                        <div className="text-2xl font-bold text-gray-900">{matchPreview.totalRows}</div>
-                        <div className="text-sm text-gray-600">Total Hour Entries</div>
+                        <div className="text-2xl font-bold text-green-600">{matchPreview.willUpdate}</div>
+                        <div className="text-sm text-gray-600">Will Update Existing</div>
                       </div>
                       <div className="bg-white rounded p-3">
-                        <div className="text-2xl font-bold text-green-600">{matchPreview.matched}</div>
-                        <div className="text-sm text-gray-600">Will Match Existing</div>
-                      </div>
-                      <div className="bg-white rounded p-3">
-                        <div className="text-2xl font-bold text-orange-600">{matchPreview.notFound}</div>
+                        <div className="text-2xl font-bold text-orange-600">{matchPreview.willCreate}</div>
                         <div className="text-sm text-gray-600">Will Create New</div>
                       </div>
                     </div>
 
-                    {matchPreview.matchedList.length > 0 && (
+                    {matchPreview.updateList.length > 0 && (
                       <details className="mb-2">
                         <summary className="cursor-pointer font-semibold text-green-800 hover:text-green-900">
-                          ✓ {matchPreview.matched} Volunteers Will Match to Existing Profiles
+                          ✓ {matchPreview.willUpdate} Volunteers Will Update Existing Profiles
                         </summary>
                         <div className="mt-2 max-h-48 overflow-auto">
                           <table className="min-w-full text-xs">
@@ -346,19 +337,21 @@ export default function ImportHours() {
                               <tr>
                                 <th className="border px-2 py-1 text-left">Name</th>
                                 <th className="border px-2 py-1 text-left">Username</th>
-                                <th className="border px-2 py-1 text-left">Email</th>
+                                <th className="border px-2 py-1 text-left">Current Email</th>
                                 <th className="border px-2 py-1 text-left">Match Type</th>
                               </tr>
                             </thead>
                             <tbody className="bg-white">
-                              {matchPreview.matchedList.map((v: any, i: number) => (
+                              {matchPreview.updateList.map((v: any, i: number) => (
                                 <tr key={i} className="hover:bg-green-50">
                                   <td className="border px-2 py-1">{v.name}</td>
                                   <td className="border px-2 py-1">{v.username || '-'}</td>
-                                  <td className="border px-2 py-1">{v.email}</td>
+                                  <td className="border px-2 py-1">{v.currentEmail}</td>
                                   <td className="border px-2 py-1">
                                     {v.matchType === 'username' ? (
                                       <span className="text-green-700 font-semibold">Username ✓</span>
+                                    ) : v.matchType === 'email' ? (
+                                      <span className="text-blue-700">Email</span>
                                     ) : (
                                       <span className="text-yellow-700">Name only</span>
                                     )}
@@ -371,25 +364,27 @@ export default function ImportHours() {
                       </details>
                     )}
 
-                    {matchPreview.notFoundList.length > 0 && (
+                    {matchPreview.createList.length > 0 && (
                       <details>
                         <summary className="cursor-pointer font-semibold text-orange-800 hover:text-orange-900">
-                          ⚠️ {matchPreview.notFound} Volunteers Not Found (Will Create New Profiles)
+                          ⚠️ {matchPreview.willCreate} Volunteers Not Found (Will Create New Profiles)
                         </summary>
                         <div className="mt-2 max-h-48 overflow-auto">
                           <table className="min-w-full text-xs">
                             <thead className="bg-orange-100">
                               <tr>
                                 <th className="border px-2 py-1 text-left">Name</th>
-                                <th className="border px-2 py-1 text-left">Will Create Email</th>
+                                <th className="border px-2 py-1 text-left">Username</th>
+                                <th className="border px-2 py-1 text-left">Will Use Email</th>
                               </tr>
                             </thead>
                             <tbody className="bg-white">
-                              {matchPreview.notFoundList.map((v: any, i: number) => (
+                              {matchPreview.createList.map((v: any, i: number) => (
                                 <tr key={i} className="hover:bg-orange-50">
                                   <td className="border px-2 py-1">{v.name}</td>
+                                  <td className="border px-2 py-1">{v.username || '-'}</td>
                                   <td className="border px-2 py-1 text-xs text-gray-600">
-                                    {v.username ? `${v.username.toLowerCase()}@legacy.ih2.org` : 'legacy email'}
+                                    {v.email || (v.username ? `${v.username}@legacy.ih2.org` : 'legacy email')}
                                   </td>
                                 </tr>
                               ))}
@@ -408,7 +403,7 @@ export default function ImportHours() {
               disabled={!file || importing}
               className="w-full px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {importing ? "Importing..." : "Import Hours"}
+              {importing ? "Importing..." : "Import Volunteers"}
             </button>
           </div>
         </div>
