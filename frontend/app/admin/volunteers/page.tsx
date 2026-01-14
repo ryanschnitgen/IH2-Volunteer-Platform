@@ -11,6 +11,7 @@ interface VolunteerProfile {
   firstName: string;
   lastName: string;
   email: string;
+  username?: string;
   phone?: string;
   address?: string;
   city?: string;
@@ -493,6 +494,9 @@ export default function AdminVolunteersPage() {
                     Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Phone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -515,7 +519,7 @@ export default function AdminVolunteersPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredVolunteers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                       {searchTerm ? "No volunteers found matching your search" : "No volunteers yet"}
                     </td>
                   </tr>
@@ -528,7 +532,10 @@ export default function AdminVolunteersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">{volunteer.email}</div>
+                        <div className="text-sm text-gray-600">{volunteer.email || "-"}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-600">{volunteer.username || "-"}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-600">
