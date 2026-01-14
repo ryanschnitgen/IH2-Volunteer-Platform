@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
+    console.log(`Starting volunteer import: ${data.length} rows`);
+
     const results = {
       total: data.length,
       updated: 0,
@@ -88,55 +90,72 @@ export async function POST(request: NextRequest) {
       notFoundList: [] as any[],
     };
 
+    // Build a map of email -> username from CSV
+    const emailToUsername = new Map<string, { username: string; firstName: string; lastName: string }>();
+
     for (const row of data as ImportVolunteerRow[]) {
-      try {
-        // Validate required fields
-        if (!row.FirstName || !row.LastName) {
-          results.skipped++;
-          continue;
-        }
+      const firstName = row.FirstName?.trim();
+      const lastName = row.LastName?.trim();
+      const email = row.EmailAddress?.trim().toLowerCase();
+      const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
 
-        const firstName = row.FirstName?.trim();
-        const lastName = row.LastName?.trim();
-        const email = row.EmailAddress?.trim().toLowerCase();
-        const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
+      if (!username || !email) {
+        results.skipped++;
+        continue;
+      }
 
-        if (!username || !email) {
-          results.skipped++;
-          continue;
-        }
+      emailToUsername.set(email, { username, firstName: firstName || '', lastName: lastName || '' });
+    }
 
-        // Match by email (most reliable for existing volunteers)
-        const volunteer = await VolunteerProfile.findOne({
-          email: email,
-        });
+    console.log(`Processing ${emailToUsername.size} unique volunteers`);
 
-        if (volunteer) {
-          // Update existing volunteer with username
-          await VolunteerProfile.updateOne(
-            { _id: volunteer._id },
-            { $set: { username, lastUpdated: new Date() } }
-          );
-          results.updated++;
-        } else {
-          // Not found - don't create, just track it
-          results.notFound++;
-          results.notFoundList.push({
-            firstName: firstName || '',
-            lastName: lastName || '',
-            email,
-            username,
-          });
-        }
+    // Fetch all volunteers that match these emails in bulk
+    const emails = Array.from(emailToUsername.keys());
+    const volunteers = await VolunteerProfile.find({
+      email: { $in: emails }
+    }).select('email _id').lean();
 
-      } catch (error: any) {
-        console.error('Error importing volunteer username:', error);
-        results.errors.push({
-          row: row,
-          error: error.message,
+    console.log(`Found ${volunteers.length} matching volunteers in database`);
+
+    // Build bulk update operations
+    const bulkOps = [];
+    const foundEmails = new Set();
+
+    for (const volunteer of volunteers) {
+      const csvData = emailToUsername.get(volunteer.email);
+      if (csvData) {
+        foundEmails.add(volunteer.email);
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: volunteer._id },
+            update: { $set: { username: csvData.username, lastUpdated: new Date() } }
+          }
         });
       }
     }
+
+    // Execute bulk update if there are operations
+    if (bulkOps.length > 0) {
+      console.log(`Executing bulk update for ${bulkOps.length} volunteers`);
+      const bulkResult = await VolunteerProfile.bulkWrite(bulkOps);
+      results.updated = bulkResult.modifiedCount;
+      console.log(`Bulk update completed: ${results.updated} modified`);
+    }
+
+    // Track not found
+    for (const [email, csvData] of emailToUsername.entries()) {
+      if (!foundEmails.has(email)) {
+        results.notFound++;
+        results.notFoundList.push({
+          firstName: csvData.firstName,
+          lastName: csvData.lastName,
+          email,
+          username: csvData.username,
+        });
+      }
+    }
+
+    console.log(`Import completed: ${results.updated} updated, ${results.notFound} not found, ${results.skipped} skipped`);
 
     return NextResponse.json({
       success: true,

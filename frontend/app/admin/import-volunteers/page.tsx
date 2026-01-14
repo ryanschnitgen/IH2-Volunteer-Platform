@@ -147,23 +147,37 @@ export default function ImportVolunteers() {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      // Send to API
-      const response = await fetch("/api/admin/import-volunteers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userEmail: user.email,
-          data: jsonData,
-        }),
-      });
+      // Send to API with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
 
-      const responseData = await response.json();
+      try {
+        const response = await fetch("/api/admin/import-volunteers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userEmail: user.email,
+            data: jsonData,
+          }),
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to import volunteers");
+        clearTimeout(timeoutId);
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(responseData.error || "Failed to import volunteers");
+        }
+
+        setResult(responseData);
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          throw new Error("Import timed out after 5 minutes. Try importing in smaller batches.");
+        }
+        throw err;
       }
-
-      setResult(responseData);
     } catch (err: any) {
       setError(err.message || "Failed to import volunteers");
     } finally {
@@ -376,7 +390,14 @@ export default function ImportVolunteers() {
               disabled={!file || importing}
               className="w-full px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {importing ? "Importing..." : "Import Volunteers"}
+              {importing ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Importing {matchPreview?.uniqueVolunteers || preview.length} volunteers... This may take a few minutes.
+                </div>
+              ) : (
+                "Import Volunteers"
+              )}
             </button>
           </div>
         </div>
