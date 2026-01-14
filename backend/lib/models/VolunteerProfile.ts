@@ -35,10 +35,11 @@ const VolunteerProfileSchema = new mongoose.Schema<IVolunteerProfile>(
     },
     email: {
       type: String,
-      required: true,
+      required: false, // Optional - may be blank until user signs up
       lowercase: true,
       trim: true,
       index: true, // For fast lookups when users sign up
+      sparse: true, // Allow multiple null values
     },
     username: {
       type: String,

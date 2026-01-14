@@ -63,56 +63,67 @@ export default function ImportVolunteers() {
         throw new Error(dbData.error || "Failed to load volunteers");
       }
 
-      // Create map of volunteers by email
+      // Create maps of volunteers by email and username
       const dbVolunteersByEmail = new Map();
+      const dbVolunteersByUsername = new Map();
 
       dbData.volunteers.forEach((v: any) => {
         if (v.email) {
           dbVolunteersByEmail.set(v.email.toLowerCase(), v);
         }
-      });
-
-      // Get unique volunteers from CSV
-      const excelVolunteers = new Map();
-      excelData.forEach((row: any) => {
-        const email = row.EmailAddress?.trim().toLowerCase();
-        const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
-
-        if (email && username) {
-          if (!excelVolunteers.has(email)) {
-            excelVolunteers.set(email, {
-              name: row.FirstName && row.LastName ? `${row.FirstName} ${row.LastName}` : email,
-              firstName: row.FirstName,
-              lastName: row.LastName,
-              username: username,
-              email: email,
-            });
-          }
+        if (v.username) {
+          dbVolunteersByUsername.set(v.username.toLowerCase(), v);
         }
       });
 
-      // Check matches by email
-      const willUpdate = [];
-      const notFound = [];
+      // Get unique volunteers from CSV
+      const excelVolunteers: any[] = [];
+      excelData.forEach((row: any) => {
+        const firstName = row.FirstName?.trim();
+        const lastName = row.LastName?.trim();
+        const email = row.EmailAddress?.trim().toLowerCase();
+        const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
 
-      for (const [email, excelVol] of excelVolunteers.entries()) {
-        // Match by email
-        const dbVol = dbVolunteersByEmail.get(email);
+        if (firstName && lastName) {
+          excelVolunteers.push({
+            name: `${firstName} ${lastName}`,
+            firstName,
+            lastName,
+            username: username || undefined,
+            email: email || undefined,
+          });
+        }
+      });
+
+      // Check matches by email or username
+      const willUpdate: any[] = [];
+      const notFound: any[] = [];
+
+      for (const excelVol of excelVolunteers) {
+        // Try to match by email first, then username
+        let dbVol = null;
+        if (excelVol.email) {
+          dbVol = dbVolunteersByEmail.get(excelVol.email);
+        }
+        if (!dbVol && excelVol.username) {
+          dbVol = dbVolunteersByUsername.get(excelVol.username);
+        }
 
         if (dbVol) {
           willUpdate.push({
             name: excelVol.name,
             username: excelVol.username,
-            currentEmail: dbVol.email,
-            currentUsername: dbVol.username,
+            email: excelVol.email,
+            currentEmail: dbVol.email || '(no email)',
+            currentUsername: dbVol.username || '(no username)',
             hasAccount: dbVol.hasAccount,
             status: 'update',
           });
         } else {
           notFound.push({
             name: excelVol.name,
-            email: excelVol.email,
-            username: excelVol.username,
+            email: excelVol.email || '(no email)',
+            username: excelVol.username || '(no username)',
             status: 'not-found',
           });
         }
@@ -120,7 +131,7 @@ export default function ImportVolunteers() {
 
       setMatchPreview({
         totalRows: excelData.length,
-        uniqueVolunteers: excelVolunteers.size,
+        uniqueVolunteers: excelVolunteers.length,
         willUpdate: willUpdate.length,
         willCreate: notFound.length,
         updateList: willUpdate,
@@ -204,7 +215,7 @@ export default function ImportVolunteers() {
           Import Volunteers
         </h1>
         <p className="text-gray-600 mb-8">
-          Upload a CSV file with volunteer information to add usernames to existing profiles or create new ones
+          Upload a CSV file with volunteer information. Email is optional - volunteers without emails can sign up later.
         </p>
 
         {error && (
@@ -363,9 +374,9 @@ export default function ImportVolunteers() {
                               {matchPreview.updateList.map((v: any, i: number) => (
                                 <tr key={i} className="hover:bg-green-50">
                                   <td className="border px-2 py-1">{v.name}</td>
-                                  <td className="border px-2 py-1 font-semibold text-green-700">{v.username}</td>
+                                  <td className="border px-2 py-1 font-semibold text-green-700">{v.username || '-'}</td>
                                   <td className="border px-2 py-1">{v.currentEmail}</td>
-                                  <td className="border px-2 py-1">{v.currentUsername || '-'}</td>
+                                  <td className="border px-2 py-1">{v.currentUsername}</td>
                                 </tr>
                               ))}
                             </tbody>
