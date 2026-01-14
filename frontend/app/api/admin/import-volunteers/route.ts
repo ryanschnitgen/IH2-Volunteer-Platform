@@ -96,19 +96,19 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const firstName = row.FirstName.trim();
-        const lastName = row.LastName.trim();
+        const firstName = row.FirstName?.trim();
+        const lastName = row.LastName?.trim();
+        const email = row.EmailAddress?.trim().toLowerCase();
         const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
 
-        if (!username) {
+        if (!username || !email) {
           results.skipped++;
           continue;
         }
 
-        // Match by name ONLY (this is adding usernames to existing volunteers)
+        // Match by email (most reliable for existing volunteers)
         const volunteer = await VolunteerProfile.findOne({
-          firstName: { $regex: new RegExp(`^${firstName}$`, 'i') },
-          lastName: { $regex: new RegExp(`^${lastName}$`, 'i') },
+          email: email,
         });
 
         if (volunteer) {
@@ -122,8 +122,9 @@ export async function POST(request: NextRequest) {
           // Not found - don't create, just track it
           results.notFound++;
           results.notFoundList.push({
-            firstName,
-            lastName,
+            firstName: firstName || '',
+            lastName: lastName || '',
+            email,
             username,
           });
         }

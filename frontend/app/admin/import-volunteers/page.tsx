@@ -34,9 +34,9 @@ export default function ImportVolunteers() {
     setMatchPreview(null);
 
     try {
-      // Read and preview file
+      // Read and preview file (supports both CSV and Excel)
       const data = await selectedFile.arrayBuffer();
-      const workbook = XLSX.read(data);
+      const workbook = XLSX.read(data, { type: 'array' });
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
@@ -46,7 +46,7 @@ export default function ImportVolunteers() {
       // Load match preview
       await loadMatchPreview(jsonData);
     } catch (err: any) {
-      setError("Failed to read Excel file: " + err.message);
+      setError("Failed to read file: " + err.message);
     }
   };
 
@@ -63,34 +63,25 @@ export default function ImportVolunteers() {
         throw new Error(dbData.error || "Failed to load volunteers");
       }
 
-      // Create maps for volunteers by username, email, and name
-      const dbVolunteersByUsername = new Map();
+      // Create map of volunteers by email
       const dbVolunteersByEmail = new Map();
-      const dbVolunteersByName = new Map();
 
       dbData.volunteers.forEach((v: any) => {
-        if (v.username) {
-          dbVolunteersByUsername.set(v.username.toLowerCase(), v);
-        }
         if (v.email) {
           dbVolunteersByEmail.set(v.email.toLowerCase(), v);
         }
-        const nameKey = v.name.toLowerCase().trim();
-        dbVolunteersByName.set(nameKey, v);
       });
 
-      // Get unique volunteers from Excel
+      // Get unique volunteers from CSV
       const excelVolunteers = new Map();
       excelData.forEach((row: any) => {
-        if (row.FirstName && row.LastName) {
-          const name = `${row.FirstName} ${row.LastName}`;
-          const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
-          const email = row.EmailAddress?.trim().toLowerCase();
-          const key = username || email || name.toLowerCase().trim();
+        const email = row.EmailAddress?.trim().toLowerCase();
+        const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
 
-          if (!excelVolunteers.has(key)) {
-            excelVolunteers.set(key, {
-              name,
+        if (email && username) {
+          if (!excelVolunteers.has(email)) {
+            excelVolunteers.set(email, {
+              name: row.FirstName && row.LastName ? `${row.FirstName} ${row.LastName}` : email,
               firstName: row.FirstName,
               lastName: row.LastName,
               username: username,
@@ -100,16 +91,13 @@ export default function ImportVolunteers() {
         }
       });
 
-      // Check matches by name ONLY
+      // Check matches by email
       const willUpdate = [];
       const notFound = [];
 
-      for (const [key, excelVol] of excelVolunteers.entries()) {
-        if (!excelVol.username) continue; // Skip rows without username
-
-        // Match by name only
-        const nameKey = excelVol.name.toLowerCase().trim();
-        const dbVol = dbVolunteersByName.get(nameKey);
+      for (const [email, excelVol] of excelVolunteers.entries()) {
+        // Match by email
+        const dbVol = dbVolunteersByEmail.get(email);
 
         if (dbVol) {
           willUpdate.push({
@@ -123,6 +111,7 @@ export default function ImportVolunteers() {
         } else {
           notFound.push({
             name: excelVol.name,
+            email: excelVol.email,
             username: excelVol.username,
             status: 'not-found',
           });
@@ -201,7 +190,7 @@ export default function ImportVolunteers() {
           Import Volunteers
         </h1>
         <p className="text-gray-600 mb-8">
-          Upload an Excel file with volunteer information to create or update volunteer profiles
+          Upload a CSV file with volunteer information to add usernames to existing profiles
         </p>
 
         {error && (
@@ -227,7 +216,9 @@ export default function ImportVolunteers() {
                 <summary className="cursor-pointer font-semibold text-orange-700">View Not Found Volunteers</summary>
                 <div className="text-xs mt-2 overflow-auto bg-white p-2 rounded max-h-48">
                   {result.results.notFoundList.map((v: any, i: number) => (
-                    <div key={i}>{v.firstName} {v.lastName} ({v.username})</div>
+                    <div key={i}>
+                      {v.firstName} {v.lastName} - {v.email} (username: {v.username})
+                    </div>
                   ))}
                 </div>
               </details>
@@ -251,11 +242,11 @@ export default function ImportVolunteers() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Excel File (.xlsx)
+                Select CSV File (.csv)
               </label>
               <input
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".csv"
                 onChange={handleFileChange}
                 className="block w-full text-sm text-gray-500
                   file:mr-4 file:py-2 file:px-4
@@ -351,13 +342,14 @@ export default function ImportVolunteers() {
                     {matchPreview.notFoundList.length > 0 && (
                       <details>
                         <summary className="cursor-pointer font-semibold text-orange-800 hover:text-orange-900">
-                          ⚠️ {matchPreview.notFound} Volunteers Not Found in Database (No Name Match)
+                          ⚠️ {matchPreview.notFound} Volunteers Not Found in Database (No Email Match)
                         </summary>
                         <div className="mt-2 max-h-48 overflow-auto">
                           <table className="min-w-full text-xs">
                             <thead className="bg-orange-100">
                               <tr>
                                 <th className="border px-2 py-1 text-left">Name</th>
+                                <th className="border px-2 py-1 text-left">Email</th>
                                 <th className="border px-2 py-1 text-left">Username</th>
                               </tr>
                             </thead>
@@ -365,6 +357,7 @@ export default function ImportVolunteers() {
                               {matchPreview.notFoundList.map((v: any, i: number) => (
                                 <tr key={i} className="hover:bg-orange-50">
                                   <td className="border px-2 py-1">{v.name}</td>
+                                  <td className="border px-2 py-1">{v.email}</td>
                                   <td className="border px-2 py-1">{v.username}</td>
                                 </tr>
                               ))}

@@ -260,7 +260,7 @@ export default function AdminDashboard() {
                 <h2 className="text-xl font-bold text-gray-900">Import Volunteers</h2>
               </div>
               <p className="text-gray-600">
-                Upload Excel file to create or update volunteer profiles with usernames.
+                Upload CSV file to add usernames to existing volunteer profiles (matches by email).
               </p>
             </div>
           </Link>
