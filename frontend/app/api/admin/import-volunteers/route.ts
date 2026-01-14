@@ -87,10 +87,11 @@ export async function POST(request: NextRequest) {
       created: 0,
       errors: [] as any[],
       skipped: 0,
+      skippedDetails: [] as any[],
     };
 
-    // Build a map of email -> username from CSV
-    const emailToUsername = new Map<string, { username: string; firstName: string; lastName: string }>();
+    // Build a map of email -> volunteer data from CSV
+    const emailToVolunteerData = new Map<string, any>();
 
     for (const row of data as ImportVolunteerRow[]) {
       const firstName = row.FirstName?.trim();
@@ -98,18 +99,48 @@ export async function POST(request: NextRequest) {
       const email = row.EmailAddress?.trim().toLowerCase();
       const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
 
-      if (!username || !email) {
+      // Skip if missing critical data
+      if (!firstName || !lastName) {
         results.skipped++;
+        results.skippedDetails.push({ reason: 'Missing name', firstName, lastName, email, username });
         continue;
       }
 
-      emailToUsername.set(email, { username, firstName: firstName || '', lastName: lastName || '' });
+      if (!email && !username) {
+        results.skipped++;
+        results.skippedDetails.push({ reason: 'Missing both email and username', firstName, lastName });
+        continue;
+      }
+
+      // Generate email if missing but have username
+      let finalEmail = email;
+      if (!finalEmail && username) {
+        finalEmail = `${username}@legacy.ih2.org`;
+      }
+      // Generate email if missing both
+      if (!finalEmail) {
+        finalEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@legacy.ih2.org`;
+      }
+
+      // Use email as key (generated or real)
+      if (!emailToVolunteerData.has(finalEmail)) {
+        emailToVolunteerData.set(finalEmail, {
+          firstName,
+          lastName,
+          email: finalEmail,
+          username,
+          fullRow: row,
+        });
+      }
     }
 
-    console.log(`Processing ${emailToUsername.size} unique volunteers`);
+    console.log(`Processing ${emailToVolunteerData.size} unique volunteers`);
+    if (results.skippedDetails.length > 0) {
+      console.log(`Skipped ${results.skippedDetails.length} rows:`, results.skippedDetails.slice(0, 10));
+    }
 
     // Fetch all volunteers that match these emails in bulk
-    const emails = Array.from(emailToUsername.keys());
+    const emails = Array.from(emailToVolunteerData.keys());
     const volunteers = await VolunteerProfile.find({
       email: { $in: emails }
     }).select('email _id').lean();
@@ -121,13 +152,17 @@ export async function POST(request: NextRequest) {
     const foundEmails = new Set();
 
     for (const volunteer of volunteers) {
-      const csvData = emailToUsername.get(volunteer.email);
+      const csvData = emailToVolunteerData.get(volunteer.email);
       if (csvData) {
         foundEmails.add(volunteer.email);
+        const updateFields: any = { lastUpdated: new Date() };
+        if (csvData.username) {
+          updateFields.username = csvData.username;
+        }
         bulkOps.push({
           updateOne: {
             filter: { _id: volunteer._id },
-            update: { $set: { username: csvData.username, lastUpdated: new Date() } }
+            update: { $set: updateFields }
           }
         });
       }
@@ -143,12 +178,9 @@ export async function POST(request: NextRequest) {
 
     // Create new volunteers for emails not found
     const volunteersToCreate = [];
-    for (const [email, csvData] of emailToUsername.entries()) {
+    for (const [email, csvData] of emailToVolunteerData.entries()) {
       if (!foundEmails.has(email)) {
-        // Get full row data for this email
-        const fullRow = (data as ImportVolunteerRow[]).find(
-          r => r.EmailAddress?.trim().toLowerCase() === email
-        );
+        const fullRow = csvData.fullRow;
 
         if (fullRow && csvData.firstName && csvData.lastName) {
           // Parse birthday
@@ -185,11 +217,10 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          volunteersToCreate.push({
+          const volunteerData: any = {
             firstName: csvData.firstName,
             lastName: csvData.lastName,
-            email: email,
-            username: csvData.username,
+            email: csvData.email,
             phone: fullRow.CellPhone?.trim(),
             address: fullRow.Address1?.trim(),
             city: fullRow.City?.trim(),
@@ -202,7 +233,14 @@ export async function POST(request: NextRequest) {
             lifetimeHours: fullRow.HoursWorked || 0,
             importedAt: new Date(),
             lastUpdated: new Date(),
-          });
+          };
+
+          // Only add username if it exists
+          if (csvData.username) {
+            volunteerData.username = csvData.username;
+          }
+
+          volunteersToCreate.push(volunteerData);
         }
       }
     }

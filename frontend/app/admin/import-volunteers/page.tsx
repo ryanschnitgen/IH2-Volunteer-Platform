@@ -220,11 +220,28 @@ export default function ImportVolunteers() {
               <p><strong>Total Rows:</strong> {result.results.total}</p>
               <p><strong>Volunteers Updated with Usernames:</strong> {result.results.updated}</p>
               <p><strong>New Volunteers Created:</strong> {result.results.created}</p>
-              <p><strong>Skipped (no username/email):</strong> {result.results.skipped}</p>
+              {result.results.skipped > 0 && (
+                <p className="text-orange-700"><strong>Skipped:</strong> {result.results.skipped}</p>
+              )}
               {result.results.errors && result.results.errors.length > 0 && (
                 <p className="text-red-700"><strong>Errors:</strong> {result.results.errors.length}</p>
               )}
             </div>
+            {result.results.skippedDetails && result.results.skippedDetails.length > 0 && (
+              <details className="mt-4">
+                <summary className="cursor-pointer font-semibold text-orange-700">View Skipped Rows ({result.results.skipped})</summary>
+                <div className="text-xs mt-2 overflow-auto bg-white p-2 rounded max-h-48">
+                  {result.results.skippedDetails.map((row: any, i: number) => (
+                    <div key={i} className="mb-2 pb-2 border-b">
+                      <strong>{row.reason}</strong>
+                      <div>Name: {row.firstName} {row.lastName}</div>
+                      {row.email && <div>Email: {row.email}</div>}
+                      {row.username && <div>Username: {row.username}</div>}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
             {result.results.errors && result.results.errors.length > 0 && (
               <details className="mt-4">
                 <summary className="cursor-pointer font-semibold">View Errors</summary>
