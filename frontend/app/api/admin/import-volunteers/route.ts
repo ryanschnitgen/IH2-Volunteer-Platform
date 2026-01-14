@@ -84,10 +84,9 @@ export async function POST(request: NextRequest) {
     const results = {
       total: data.length,
       updated: 0,
-      notFound: 0,
+      created: 0,
       errors: [] as any[],
       skipped: 0,
-      notFoundList: [] as any[],
     };
 
     // Build a map of email -> username from CSV
@@ -142,24 +141,85 @@ export async function POST(request: NextRequest) {
       console.log(`Bulk update completed: ${results.updated} modified`);
     }
 
-    // Track not found
+    // Create new volunteers for emails not found
+    const volunteersToCreate = [];
     for (const [email, csvData] of emailToUsername.entries()) {
       if (!foundEmails.has(email)) {
-        results.notFound++;
-        results.notFoundList.push({
-          firstName: csvData.firstName,
-          lastName: csvData.lastName,
-          email,
-          username: csvData.username,
-        });
+        // Get full row data for this email
+        const fullRow = (data as ImportVolunteerRow[]).find(
+          r => r.EmailAddress?.trim().toLowerCase() === email
+        );
+
+        if (fullRow && csvData.firstName && csvData.lastName) {
+          // Parse birthday
+          let birthday = undefined;
+          if (fullRow.Birthday) {
+            try {
+              const parts = fullRow.Birthday.split('/');
+              if (parts.length === 3) {
+                let month = parseInt(parts[0]);
+                let day = parseInt(parts[1]);
+                let year = parseInt(parts[2]);
+                if (year < 100) year += 2000;
+                birthday = new Date(year, month - 1, day);
+              }
+            } catch (e) {
+              // Skip invalid birthday
+            }
+          }
+
+          // Parse volunteer date joined
+          let volunteerDateJoined = undefined;
+          if (fullRow.VolunteerDateJoined) {
+            try {
+              const parts = fullRow.VolunteerDateJoined.split('/');
+              if (parts.length === 3) {
+                let month = parseInt(parts[0]);
+                let day = parseInt(parts[1]);
+                let year = parseInt(parts[2]);
+                if (year < 100) year += 2000;
+                volunteerDateJoined = new Date(year, month - 1, day);
+              }
+            } catch (e) {
+              // Skip invalid date
+            }
+          }
+
+          volunteersToCreate.push({
+            firstName: csvData.firstName,
+            lastName: csvData.lastName,
+            email: email,
+            username: csvData.username,
+            phone: fullRow.CellPhone?.trim(),
+            address: fullRow.Address1?.trim(),
+            city: fullRow.City?.trim(),
+            state: fullRow.Province?.trim(),
+            zipCode: fullRow.PostalCode?.trim(),
+            country: fullRow.Country?.trim(),
+            birthday,
+            volunteerDateJoined,
+            canLiftHeavy: fullRow['Q - Able to lift heavy items']?.toLowerCase() === 'yes',
+            lifetimeHours: fullRow.HoursWorked || 0,
+            importedAt: new Date(),
+            lastUpdated: new Date(),
+          });
+        }
       }
     }
 
-    console.log(`Import completed: ${results.updated} updated, ${results.notFound} not found, ${results.skipped} skipped`);
+    // Bulk create new volunteers
+    if (volunteersToCreate.length > 0) {
+      console.log(`Creating ${volunteersToCreate.length} new volunteers`);
+      const createResult = await VolunteerProfile.insertMany(volunteersToCreate, { ordered: false });
+      results.created = createResult.length;
+      console.log(`Created ${results.created} new volunteers`);
+    }
+
+    console.log(`Import completed: ${results.updated} updated, ${results.created} created, ${results.skipped} skipped`);
 
     return NextResponse.json({
       success: true,
-      message: `Import completed: ${results.updated} volunteers updated with usernames, ${results.notFound} not found in database, ${results.skipped} skipped`,
+      message: `Import completed: ${results.updated} volunteers updated with usernames, ${results.created} new volunteers created, ${results.skipped} skipped`,
       results,
     });
   } catch (error: any) {

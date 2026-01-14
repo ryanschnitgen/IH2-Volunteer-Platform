@@ -122,9 +122,9 @@ export default function ImportVolunteers() {
         totalRows: excelData.length,
         uniqueVolunteers: excelVolunteers.size,
         willUpdate: willUpdate.length,
-        notFound: notFound.length,
+        willCreate: notFound.length,
         updateList: willUpdate,
-        notFoundList: notFound,
+        createList: notFound,
       });
     } catch (err: any) {
       console.error("Failed to load match preview:", err);
@@ -204,7 +204,7 @@ export default function ImportVolunteers() {
           Import Volunteers
         </h1>
         <p className="text-gray-600 mb-8">
-          Upload a CSV file with volunteer information to add usernames to existing profiles
+          Upload a CSV file with volunteer information to add usernames to existing profiles or create new ones
         </p>
 
         {error && (
@@ -219,25 +219,13 @@ export default function ImportVolunteers() {
             <div className="space-y-1 text-sm">
               <p><strong>Total Rows:</strong> {result.results.total}</p>
               <p><strong>Volunteers Updated with Usernames:</strong> {result.results.updated}</p>
-              <p><strong>Not Found (no match by name):</strong> {result.results.notFound}</p>
-              <p><strong>Skipped (no username):</strong> {result.results.skipped}</p>
-              {result.results.errors.length > 0 && (
+              <p><strong>New Volunteers Created:</strong> {result.results.created}</p>
+              <p><strong>Skipped (no username/email):</strong> {result.results.skipped}</p>
+              {result.results.errors && result.results.errors.length > 0 && (
                 <p className="text-red-700"><strong>Errors:</strong> {result.results.errors.length}</p>
               )}
             </div>
-            {result.results.notFoundList && result.results.notFoundList.length > 0 && (
-              <details className="mt-4">
-                <summary className="cursor-pointer font-semibold text-orange-700">View Not Found Volunteers</summary>
-                <div className="text-xs mt-2 overflow-auto bg-white p-2 rounded max-h-48">
-                  {result.results.notFoundList.map((v: any, i: number) => (
-                    <div key={i}>
-                      {v.firstName} {v.lastName} - {v.email} (username: {v.username})
-                    </div>
-                  ))}
-                </div>
-              </details>
-            )}
-            {result.results.errors.length > 0 && (
+            {result.results.errors && result.results.errors.length > 0 && (
               <details className="mt-4">
                 <summary className="cursor-pointer font-semibold">View Errors</summary>
                 <pre className="text-xs mt-2 overflow-auto bg-white p-2 rounded">
@@ -318,8 +306,8 @@ export default function ImportVolunteers() {
                         <div className="text-sm text-gray-600">Will Add Username To</div>
                       </div>
                       <div className="bg-white rounded p-3">
-                        <div className="text-2xl font-bold text-orange-600">{matchPreview.notFound}</div>
-                        <div className="text-sm text-gray-600">Not Found By Name</div>
+                        <div className="text-2xl font-bold text-blue-600">{matchPreview.willCreate}</div>
+                        <div className="text-sm text-gray-600">Will Create New</div>
                       </div>
                     </div>
 
@@ -353,14 +341,14 @@ export default function ImportVolunteers() {
                       </details>
                     )}
 
-                    {matchPreview.notFoundList.length > 0 && (
+                    {matchPreview.createList && matchPreview.createList.length > 0 && (
                       <details>
-                        <summary className="cursor-pointer font-semibold text-orange-800 hover:text-orange-900">
-                          ⚠️ {matchPreview.notFound} Volunteers Not Found in Database (No Email Match)
+                        <summary className="cursor-pointer font-semibold text-blue-800 hover:text-blue-900">
+                          + {matchPreview.willCreate} Volunteers Will Be Created (No Email Match)
                         </summary>
                         <div className="mt-2 max-h-48 overflow-auto">
                           <table className="min-w-full text-xs">
-                            <thead className="bg-orange-100">
+                            <thead className="bg-blue-100">
                               <tr>
                                 <th className="border px-2 py-1 text-left">Name</th>
                                 <th className="border px-2 py-1 text-left">Email</th>
@@ -368,8 +356,8 @@ export default function ImportVolunteers() {
                               </tr>
                             </thead>
                             <tbody className="bg-white">
-                              {matchPreview.notFoundList.map((v: any, i: number) => (
-                                <tr key={i} className="hover:bg-orange-50">
+                              {matchPreview.createList.map((v: any, i: number) => (
+                                <tr key={i} className="hover:bg-blue-50">
                                   <td className="border px-2 py-1">{v.name}</td>
                                   <td className="border px-2 py-1">{v.email}</td>
                                   <td className="border px-2 py-1">{v.username}</td>
