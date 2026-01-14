@@ -37,25 +37,18 @@ export async function GET(request: NextRequest) {
 
     // Get all volunteer profiles for matching preview
     const allVolunteers = await VolunteerProfile.find({})
-      .select('firstName lastName email linkedUserId')
+      .select('firstName lastName email linkedUserId username')
       .lean();
 
     return NextResponse.json({
       success: true,
       totalVolunteers: allVolunteers.length,
-      volunteers: allVolunteers.map(v => {
-        // Extract username from legacy email (username@legacy.ih2.org)
-        let username = undefined;
-        if (v.email.endsWith('@legacy.ih2.org')) {
-          username = v.email.replace('@legacy.ih2.org', '');
-        }
-        return {
-          name: `${v.firstName} ${v.lastName}`,
-          email: v.email,
-          hasAccount: !!v.linkedUserId,
-          username,
-        };
-      }),
+      volunteers: allVolunteers.map(v => ({
+        name: `${v.firstName} ${v.lastName}`,
+        email: v.email,
+        hasAccount: !!v.linkedUserId,
+        username: v.username,
+      })),
     });
   } catch (error: any) {
     console.error('Preview error:', error);
@@ -89,9 +82,10 @@ export async function POST(request: NextRequest) {
     const results = {
       total: data.length,
       updated: 0,
-      created: 0,
+      notFound: 0,
       errors: [] as any[],
       skipped: 0,
+      notFoundList: [] as any[],
     };
 
     for (const row of data as ImportVolunteerRow[]) {
@@ -106,109 +100,36 @@ export async function POST(request: NextRequest) {
         const lastName = row.LastName.trim();
         const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
 
-        // Determine email (prefer EmailAddress, fall back to legacy email with username)
-        let email = row.EmailAddress?.trim().toLowerCase();
-        if (!email && username) {
-          email = `${username}@legacy.ih2.org`;
-        }
-        if (!email) {
-          email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@legacy.ih2.org`;
+        if (!username) {
+          results.skipped++;
+          continue;
         }
 
-        // Try to match by username first (most reliable)
-        let volunteer = null;
-        if (username) {
-          const legacyEmail = `${username}@legacy.ih2.org`;
-          volunteer = await VolunteerProfile.findOne({
-            email: legacyEmail,
-          });
-        }
-
-        // Fall back to email match
-        if (!volunteer && row.EmailAddress) {
-          volunteer = await VolunteerProfile.findOne({
-            email: email,
-          });
-        }
-
-        // Fall back to name matching
-        if (!volunteer) {
-          volunteer = await VolunteerProfile.findOne({
-            firstName: { $regex: new RegExp(`^${firstName}$`, 'i') },
-            lastName: { $regex: new RegExp(`^${lastName}$`, 'i') },
-          });
-        }
-
-        // Parse birthday
-        let birthday = undefined;
-        if (row.Birthday) {
-          try {
-            const parts = row.Birthday.split('/');
-            if (parts.length === 3) {
-              let month = parseInt(parts[0]);
-              let day = parseInt(parts[1]);
-              let year = parseInt(parts[2]);
-              if (year < 100) year += 2000;
-              birthday = new Date(year, month - 1, day);
-            }
-          } catch (e) {
-            // Skip invalid birthday
-          }
-        }
-
-        // Parse volunteer date joined
-        let volunteerDateJoined = undefined;
-        if (row.VolunteerDateJoined) {
-          try {
-            const parts = row.VolunteerDateJoined.split('/');
-            if (parts.length === 3) {
-              let month = parseInt(parts[0]);
-              let day = parseInt(parts[1]);
-              let year = parseInt(parts[2]);
-              if (year < 100) year += 2000;
-              volunteerDateJoined = new Date(year, month - 1, day);
-            }
-          } catch (e) {
-            // Skip invalid date
-          }
-        }
-
-        // Prepare update data
-        const updateData = {
-          firstName,
-          lastName,
-          email,
-          phone: row.CellPhone?.trim(),
-          address: row.Address1?.trim(),
-          city: row.City?.trim(),
-          state: row.Province?.trim(),
-          zipCode: row.PostalCode?.trim(),
-          country: row.Country?.trim(),
-          birthday,
-          volunteerDateJoined,
-          canLiftHeavy: row['Q - Able to lift heavy items']?.toLowerCase() === 'yes',
-          lifetimeHours: row.HoursWorked || 0,
-          lastUpdated: new Date(),
-        };
+        // Match by name ONLY (this is adding usernames to existing volunteers)
+        const volunteer = await VolunteerProfile.findOne({
+          firstName: { $regex: new RegExp(`^${firstName}$`, 'i') },
+          lastName: { $regex: new RegExp(`^${lastName}$`, 'i') },
+        });
 
         if (volunteer) {
-          // Update existing volunteer
+          // Update existing volunteer with username
           await VolunteerProfile.updateOne(
             { _id: volunteer._id },
-            { $set: updateData }
+            { $set: { username, lastUpdated: new Date() } }
           );
           results.updated++;
         } else {
-          // Create new volunteer profile
-          await VolunteerProfile.create({
-            ...updateData,
-            importedAt: new Date(),
+          // Not found - don't create, just track it
+          results.notFound++;
+          results.notFoundList.push({
+            firstName,
+            lastName,
+            username,
           });
-          results.created++;
         }
 
       } catch (error: any) {
-        console.error('Error importing volunteer:', error);
+        console.error('Error importing volunteer username:', error);
         results.errors.push({
           row: row,
           error: error.message,
@@ -218,7 +139,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Import completed: ${results.updated} volunteers updated, ${results.created} volunteers created, ${results.skipped} skipped`,
+      message: `Import completed: ${results.updated} volunteers updated with usernames, ${results.notFound} not found in database, ${results.skipped} skipped`,
       results,
     });
   } catch (error: any) {

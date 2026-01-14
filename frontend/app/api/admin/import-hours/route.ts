@@ -31,25 +31,18 @@ export async function GET(request: NextRequest) {
 
     // Get all volunteer profiles for matching preview
     const allVolunteers = await VolunteerProfile.find({})
-      .select('firstName lastName email linkedUserId')
+      .select('firstName lastName email linkedUserId username')
       .lean();
 
     return NextResponse.json({
       success: true,
       totalVolunteers: allVolunteers.length,
-      volunteers: allVolunteers.map(v => {
-        // Extract username from legacy email (username@legacy.ih2.org)
-        let username = undefined;
-        if (v.email.endsWith('@legacy.ih2.org')) {
-          username = v.email.replace('@legacy.ih2.org', '');
-        }
-        return {
-          name: `${v.firstName} ${v.lastName}`,
-          email: v.email,
-          hasAccount: !!v.linkedUserId,
-          username,
-        };
-      }),
+      volunteers: allVolunteers.map(v => ({
+        name: `${v.firstName} ${v.lastName}`,
+        email: v.email,
+        hasAccount: !!v.linkedUserId,
+        username: v.username,
+      })),
     });
   } catch (error: any) {
     console.error('Preview error:', error);
@@ -118,10 +111,7 @@ export async function POST(request: NextRequest) {
         // Try to match by username first (most reliable)
         let volunteer = null;
         if (username) {
-          const legacyEmail = `${username}@legacy.ih2.org`;
-          volunteer = await VolunteerProfile.findOne({
-            email: legacyEmail,
-          });
+          volunteer = await VolunteerProfile.findOne({ username });
         }
 
         // Fall back to name matching if username not found
@@ -143,6 +133,7 @@ export async function POST(request: NextRequest) {
             firstName,
             lastName,
             email: legacyEmail,
+            username: username,
             lifetimeHours: 0,
             importedAt: new Date(),
             lastUpdated: new Date(),

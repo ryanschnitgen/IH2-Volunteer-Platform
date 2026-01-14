@@ -4,6 +4,7 @@ export interface IVolunteerProfile {
   firstName: string;
   lastName: string;
   email: string;
+  username?: string; // Legacy system username
   phone?: string;
   address?: string;
   city?: string;
@@ -38,6 +39,12 @@ const VolunteerProfileSchema = new mongoose.Schema<IVolunteerProfile>(
       lowercase: true,
       trim: true,
       index: true, // For fast lookups when users sign up
+    },
+    username: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      index: true, // For fast lookups during import
     },
     phone: {
       type: String,
