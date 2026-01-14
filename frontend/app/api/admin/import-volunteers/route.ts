@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       const row = (data as ImportVolunteerRow[])[i];
       const firstName = row.FirstName?.toString().trim();
       const lastName = row.LastName?.toString().trim();
-      const email = row.EmailAddress?.toString().trim().toLowerCase();
+      let email = row.EmailAddress?.toString().trim().toLowerCase();
       const username = row.Username?.toString().trim().toLowerCase().replace(/\s+/g, '');
 
       // Skip if missing critical data
@@ -127,20 +127,26 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      // If no email but has username, generate legacy email
+      if ((!email || email === '') && username) {
+        email = `${username}@legacy.ih2.org`;
+      }
+
+      // Skip only if BOTH email and username are missing
       if (!email || email === '') {
         results.skipped++;
         results.skippedDetails.push({
-          reason: 'Missing EmailAddress',
+          reason: 'Missing both EmailAddress and Username',
           row: i + 2,
           firstName,
           lastName,
           email: '(empty)',
-          username: username || '(empty)'
+          username: '(empty)'
         });
         continue;
       }
 
-      // Use email as key - no generation, must be in CSV
+      // Use email as key (real or generated from username)
       if (!emailToVolunteerData.has(email)) {
         emailToVolunteerData.set(email, {
           firstName,
@@ -149,6 +155,9 @@ export async function POST(request: NextRequest) {
           username,
           fullRow: row,
         });
+      } else {
+        // Duplicate email - log for debugging
+        console.log(`Duplicate email found: ${email} for ${firstName} ${lastName}`);
       }
     }
 
