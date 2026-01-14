@@ -93,41 +93,59 @@ export async function POST(request: NextRequest) {
     // Build a map of email -> volunteer data from CSV
     const emailToVolunteerData = new Map<string, any>();
 
-    for (const row of data as ImportVolunteerRow[]) {
-      const firstName = row.FirstName?.trim();
-      const lastName = row.LastName?.trim();
-      const email = row.EmailAddress?.trim().toLowerCase();
-      const username = row.Username?.trim().toLowerCase().replace(/\s+/g, '');
+    for (let i = 0; i < (data as ImportVolunteerRow[]).length; i++) {
+      const row = (data as ImportVolunteerRow[])[i];
+      const firstName = row.FirstName?.toString().trim();
+      const lastName = row.LastName?.toString().trim();
+      const email = row.EmailAddress?.toString().trim().toLowerCase();
+      const username = row.Username?.toString().trim().toLowerCase().replace(/\s+/g, '');
 
       // Skip if missing critical data
-      if (!firstName || !lastName) {
+      if (!firstName || firstName === '') {
         results.skipped++;
-        results.skippedDetails.push({ reason: 'Missing name', firstName, lastName, email, username });
+        results.skippedDetails.push({
+          reason: 'Missing FirstName',
+          row: i + 2, // +2 because Excel is 1-indexed and has header row
+          firstName: firstName || '(empty)',
+          lastName: lastName || '(empty)',
+          email: email || '(empty)',
+          username: username || '(empty)'
+        });
         continue;
       }
 
-      if (!email && !username) {
+      if (!lastName || lastName === '') {
         results.skipped++;
-        results.skippedDetails.push({ reason: 'Missing both email and username', firstName, lastName });
+        results.skippedDetails.push({
+          reason: 'Missing LastName',
+          row: i + 2,
+          firstName: firstName || '(empty)',
+          lastName: lastName || '(empty)',
+          email: email || '(empty)',
+          username: username || '(empty)'
+        });
         continue;
       }
 
-      // Generate email if missing but have username
-      let finalEmail = email;
-      if (!finalEmail && username) {
-        finalEmail = `${username}@legacy.ih2.org`;
-      }
-      // Generate email if missing both
-      if (!finalEmail) {
-        finalEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@legacy.ih2.org`;
-      }
-
-      // Use email as key (generated or real)
-      if (!emailToVolunteerData.has(finalEmail)) {
-        emailToVolunteerData.set(finalEmail, {
+      if (!email || email === '') {
+        results.skipped++;
+        results.skippedDetails.push({
+          reason: 'Missing EmailAddress',
+          row: i + 2,
           firstName,
           lastName,
-          email: finalEmail,
+          email: '(empty)',
+          username: username || '(empty)'
+        });
+        continue;
+      }
+
+      // Use email as key - no generation, must be in CSV
+      if (!emailToVolunteerData.has(email)) {
+        emailToVolunteerData.set(email, {
+          firstName,
+          lastName,
+          email,
           username,
           fullRow: row,
         });
@@ -220,16 +238,16 @@ export async function POST(request: NextRequest) {
           const volunteerData: any = {
             firstName: csvData.firstName,
             lastName: csvData.lastName,
-            email: csvData.email,
-            phone: fullRow.CellPhone?.trim(),
-            address: fullRow.Address1?.trim(),
-            city: fullRow.City?.trim(),
-            state: fullRow.Province?.trim(),
-            zipCode: fullRow.PostalCode?.trim(),
-            country: fullRow.Country?.trim(),
+            email: csvData.email, // From EmailAddress column only, no generation
+            phone: fullRow.CellPhone?.toString().trim(),
+            address: fullRow.Address1?.toString().trim(),
+            city: fullRow.City?.toString().trim(),
+            state: fullRow.Province?.toString().trim(),
+            zipCode: fullRow.PostalCode?.toString().trim(),
+            country: fullRow.Country?.toString().trim(),
             birthday,
             volunteerDateJoined,
-            canLiftHeavy: fullRow['Q - Able to lift heavy items']?.toLowerCase() === 'yes',
+            canLiftHeavy: fullRow['Q - Able to lift heavy items']?.toString().toLowerCase() === 'yes',
             lifetimeHours: fullRow.HoursWorked || 0,
             importedAt: new Date(),
             lastUpdated: new Date(),

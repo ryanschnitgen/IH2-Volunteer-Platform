@@ -228,17 +228,33 @@ export default function ImportVolunteers() {
               )}
             </div>
             {result.results.skippedDetails && result.results.skippedDetails.length > 0 && (
-              <details className="mt-4">
-                <summary className="cursor-pointer font-semibold text-orange-700">View Skipped Rows ({result.results.skipped})</summary>
-                <div className="text-xs mt-2 overflow-auto bg-white p-2 rounded max-h-48">
-                  {result.results.skippedDetails.map((row: any, i: number) => (
-                    <div key={i} className="mb-2 pb-2 border-b">
-                      <strong>{row.reason}</strong>
-                      <div>Name: {row.firstName} {row.lastName}</div>
-                      {row.email && <div>Email: {row.email}</div>}
-                      {row.username && <div>Username: {row.username}</div>}
-                    </div>
-                  ))}
+              <details className="mt-4" open>
+                <summary className="cursor-pointer font-semibold text-orange-700">⚠️ View Skipped Rows ({result.results.skipped})</summary>
+                <div className="text-xs mt-2 overflow-auto bg-white p-2 rounded max-h-64">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-orange-100">
+                      <tr>
+                        <th className="border px-2 py-1 text-left">CSV Row</th>
+                        <th className="border px-2 py-1 text-left">Reason</th>
+                        <th className="border px-2 py-1 text-left">FirstName</th>
+                        <th className="border px-2 py-1 text-left">LastName</th>
+                        <th className="border px-2 py-1 text-left">Email</th>
+                        <th className="border px-2 py-1 text-left">Username</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.results.skippedDetails.map((row: any, i: number) => (
+                        <tr key={i} className="hover:bg-orange-50">
+                          <td className="border px-2 py-1">{row.row}</td>
+                          <td className="border px-2 py-1 font-semibold">{row.reason}</td>
+                          <td className="border px-2 py-1">{row.firstName}</td>
+                          <td className="border px-2 py-1">{row.lastName}</td>
+                          <td className="border px-2 py-1">{row.email}</td>
+                          <td className="border px-2 py-1">{row.username}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </details>
             )}
