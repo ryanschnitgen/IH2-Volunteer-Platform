@@ -15,6 +15,8 @@ export default function ImportHours() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<any[]>([]);
+  const [matchPreview, setMatchPreview] = useState<any>(null);
+  const [loadingMatch, setLoadingMatch] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin(user.email))) {
@@ -29,6 +31,7 @@ export default function ImportHours() {
     setFile(selectedFile);
     setError("");
     setResult(null);
+    setMatchPreview(null);
 
     try {
       // Read and preview file
@@ -39,8 +42,85 @@ export default function ImportHours() {
 
       // Show preview of first 5 rows
       setPreview(jsonData.slice(0, 5));
+
+      // Load match preview
+      await loadMatchPreview(jsonData);
     } catch (err: any) {
       setError("Failed to read Excel file: " + err.message);
+    }
+  };
+
+  const loadMatchPreview = async (excelData: any[]) => {
+    if (!user?.email) return;
+
+    setLoadingMatch(true);
+    try {
+      // Get all existing volunteers from database
+      const response = await fetch(`/api/admin/import-hours?userEmail=${encodeURIComponent(user.email)}`);
+      const dbData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(dbData.error || "Failed to load volunteers");
+      }
+
+      // Create a map of volunteers by name
+      const dbVolunteers = new Map();
+      dbData.volunteers.forEach((v: any) => {
+        const key = v.name.toLowerCase().trim();
+        dbVolunteers.set(key, v);
+      });
+
+      // Get unique volunteers from Excel
+      const excelVolunteers = new Map();
+      excelData.forEach((row: any) => {
+        if (row.FirstName && row.LastName) {
+          const name = `${row.FirstName} ${row.LastName}`;
+          const key = name.toLowerCase().trim();
+          if (!excelVolunteers.has(key)) {
+            excelVolunteers.set(key, {
+              name,
+              firstName: row.FirstName,
+              lastName: row.LastName,
+              username: row.Username,
+            });
+          }
+        }
+      });
+
+      // Check matches
+      const matched = [];
+      const notFound = [];
+
+      for (const [key, excelVol] of excelVolunteers.entries()) {
+        const dbVol = dbVolunteers.get(key);
+        if (dbVol) {
+          matched.push({
+            name: excelVol.name,
+            email: dbVol.email,
+            hasAccount: dbVol.hasAccount,
+            status: 'match',
+          });
+        } else {
+          notFound.push({
+            name: excelVol.name,
+            username: excelVol.username,
+            status: 'new',
+          });
+        }
+      }
+
+      setMatchPreview({
+        totalRows: excelData.length,
+        uniqueVolunteers: excelVolunteers.size,
+        matched: matched.length,
+        notFound: notFound.length,
+        matchedList: matched,
+        notFoundList: notFound,
+      });
+    } catch (err: any) {
+      console.error("Failed to load match preview:", err);
+    } finally {
+      setLoadingMatch(false);
     }
   };
 
@@ -184,32 +264,117 @@ export default function ImportHours() {
             </div>
 
             {preview.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Preview (First 5 Rows)</h3>
-                <div className="overflow-auto">
-                  <table className="min-w-full text-sm border">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="border px-2 py-1">Date</th>
-                        <th className="border px-2 py-1">Hours</th>
-                        <th className="border px-2 py-1">Name</th>
-                        <th className="border px-2 py-1">Category</th>
-                        <th className="border px-2 py-1">Activity</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.map((row: any, i) => (
-                        <tr key={i} className="hover:bg-gray-50">
-                          <td className="border px-2 py-1">{row.DateVolunteered}</td>
-                          <td className="border px-2 py-1">{row.HoursWorked}</td>
-                          <td className="border px-2 py-1">{row.FirstName} {row.LastName}</td>
-                          <td className="border px-2 py-1">{row.ActivityCategoryName}</td>
-                          <td className="border px-2 py-1">{row.ActivityName}</td>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Data Preview (First 5 Rows)</h3>
+                  <div className="overflow-auto">
+                    <table className="min-w-full text-sm border">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="border px-2 py-1">Date</th>
+                          <th className="border px-2 py-1">Hours</th>
+                          <th className="border px-2 py-1">Name</th>
+                          <th className="border px-2 py-1">Category</th>
+                          <th className="border px-2 py-1">Activity</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {preview.map((row: any, i) => (
+                          <tr key={i} className="hover:bg-gray-50">
+                            <td className="border px-2 py-1">{row.DateVolunteered}</td>
+                            <td className="border px-2 py-1">{row.HoursWorked}</td>
+                            <td className="border px-2 py-1">{row.FirstName} {row.LastName}</td>
+                            <td className="border px-2 py-1">{row.ActivityCategoryName}</td>
+                            <td className="border px-2 py-1">{row.ActivityName}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
+
+                {loadingMatch && (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="text-sm text-gray-600 mt-2">Checking volunteer matches...</p>
+                  </div>
+                )}
+
+                {matchPreview && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-bold text-blue-900 mb-3">📊 Match Analysis</h3>
+                    <div className="grid md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-white rounded p-3">
+                        <div className="text-2xl font-bold text-gray-900">{matchPreview.totalRows}</div>
+                        <div className="text-sm text-gray-600">Total Hour Entries</div>
+                      </div>
+                      <div className="bg-white rounded p-3">
+                        <div className="text-2xl font-bold text-green-600">{matchPreview.matched}</div>
+                        <div className="text-sm text-gray-600">Will Match Existing</div>
+                      </div>
+                      <div className="bg-white rounded p-3">
+                        <div className="text-2xl font-bold text-orange-600">{matchPreview.notFound}</div>
+                        <div className="text-sm text-gray-600">Will Create New</div>
+                      </div>
+                    </div>
+
+                    {matchPreview.matchedList.length > 0 && (
+                      <details className="mb-2">
+                        <summary className="cursor-pointer font-semibold text-green-800 hover:text-green-900">
+                          ✓ {matchPreview.matched} Volunteers Will Match to Existing Profiles
+                        </summary>
+                        <div className="mt-2 max-h-48 overflow-auto">
+                          <table className="min-w-full text-xs">
+                            <thead className="bg-green-100">
+                              <tr>
+                                <th className="border px-2 py-1 text-left">Name</th>
+                                <th className="border px-2 py-1 text-left">Email</th>
+                                <th className="border px-2 py-1 text-left">Has Account</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white">
+                              {matchPreview.matchedList.map((v: any, i: number) => (
+                                <tr key={i} className="hover:bg-green-50">
+                                  <td className="border px-2 py-1">{v.name}</td>
+                                  <td className="border px-2 py-1">{v.email}</td>
+                                  <td className="border px-2 py-1">{v.hasAccount ? 'Yes ✓' : 'No'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </details>
+                    )}
+
+                    {matchPreview.notFoundList.length > 0 && (
+                      <details>
+                        <summary className="cursor-pointer font-semibold text-orange-800 hover:text-orange-900">
+                          ⚠️ {matchPreview.notFound} Volunteers Not Found (Will Create New Profiles)
+                        </summary>
+                        <div className="mt-2 max-h-48 overflow-auto">
+                          <table className="min-w-full text-xs">
+                            <thead className="bg-orange-100">
+                              <tr>
+                                <th className="border px-2 py-1 text-left">Name</th>
+                                <th className="border px-2 py-1 text-left">Will Create Email</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white">
+                              {matchPreview.notFoundList.map((v: any, i: number) => (
+                                <tr key={i} className="hover:bg-orange-50">
+                                  <td className="border px-2 py-1">{v.name}</td>
+                                  <td className="border px-2 py-1 text-xs text-gray-600">
+                                    {v.username ? `${v.username.toLowerCase()}@legacy.ih2.org` : 'legacy email'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
