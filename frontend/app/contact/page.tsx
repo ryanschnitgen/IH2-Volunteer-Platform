@@ -140,19 +140,19 @@ export default function Contact() {
                   </svg>
                   <span>724-230-6378</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-start gap-3 min-w-0">
+                  <svg className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <a href="mailto:info@inspiredheartsandhands.com" className="text-primary-600 hover:text-primary-700">
+                  <a href="mailto:info@inspiredheartsandhands.com" className="text-primary-600 hover:text-primary-700 break-all min-w-0">
                     info@inspiredheartsandhands.com
                   </a>
                 </div>
-                <div className="flex items-center gap-3">
-                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-start gap-3 min-w-0">
+                  <svg className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                   </svg>
-                  <a href="https://inspiredheartsandhands.com" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700">
+                  <a href="https://inspiredheartsandhands.com" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 break-all min-w-0">
                     inspiredheartsandhands.com
                   </a>
                 </div>
