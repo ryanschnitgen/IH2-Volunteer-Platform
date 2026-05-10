@@ -160,46 +160,49 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Profile</h1>
-          <p className="text-gray-600">Manage your volunteer profile and settings</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="page-hero">
+        <div className="relative z-10 container mx-auto px-4 max-w-4xl">
+          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Manage your contact info and preferences</p>
         </div>
+      </div>
 
-        {/* Success Message */}
+      <div className="container mx-auto px-4 max-w-4xl py-8">
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+          <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl text-green-700 text-sm">
             {success}
           </div>
         )}
 
-        {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-700 text-sm">
             {error}
           </div>
         )}
 
-        {/* Stats Card */}
         {profile && profile.lifetimeHours > 0 && (
-          <div className="bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-lg shadow-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold mb-2 opacity-90">Imported Lifetime Hours</h3>
-            <p className="text-5xl font-bold">{profile.lifetimeHours.toFixed(2)}</p>
-            <p className="text-sm opacity-80 mt-2">From previous platform</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Imported Hours</p>
+              <p className="text-3xl font-bold text-purple-600 tabular-nums">{profile.lifetimeHours.toFixed(1)}</p>
+              <p className="text-sm text-gray-500 mt-1">from previous platform</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
+              <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         )}
 
         {/* Profile Information Card */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7 mb-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
+            <h2 className="text-base font-semibold text-gray-900">Profile Information</h2>
             {!editing && (
-              <button
-                onClick={() => setEditing(true)}
-                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition font-semibold"
-              >
-                Edit Profile
+              <button onClick={() => setEditing(true)} className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+                Edit
               </button>
             )}
           </div>
@@ -214,7 +217,7 @@ export default function ProfilePage() {
                 type="email"
                 value={user.email || ""}
                 disabled
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500"
               />
               <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
@@ -230,8 +233,8 @@ export default function ProfilePage() {
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   disabled={!editing}
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                    editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                  className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                    editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                   }`}
                   required
                 />
@@ -246,8 +249,8 @@ export default function ProfilePage() {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   disabled={!editing}
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                    editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                  className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                    editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                   }`}
                   required
                 />
@@ -264,8 +267,8 @@ export default function ProfilePage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 disabled={!editing}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                  editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                  editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                 }`}
                 placeholder="(123) 456-7890"
               />
@@ -281,8 +284,8 @@ export default function ProfilePage() {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 disabled={!editing}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                  editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                  editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                 }`}
                 placeholder="123 Main St"
               />
@@ -299,8 +302,8 @@ export default function ProfilePage() {
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   disabled={!editing}
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                    editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                  className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                    editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                   }`}
                 />
               </div>
@@ -314,8 +317,8 @@ export default function ProfilePage() {
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   disabled={!editing}
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                    editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                  className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                    editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                   }`}
                   placeholder="PA"
                 />
@@ -330,8 +333,8 @@ export default function ProfilePage() {
                   value={zipCode}
                   onChange={(e) => setZipCode(e.target.value)}
                   disabled={!editing}
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                    editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                  className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                    editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                   }`}
                 />
               </div>
@@ -347,8 +350,8 @@ export default function ProfilePage() {
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 disabled={!editing}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                  editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                  editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                 }`}
                 placeholder="USA"
               />
@@ -364,8 +367,8 @@ export default function ProfilePage() {
                 value={birthday}
                 onChange={(e) => setBirthday(e.target.value)}
                 disabled={!editing}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                  editing ? "focus:ring-2 focus:ring-primary-500" : "bg-gray-50 text-gray-500"
+                className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                  editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
                 }`}
               />
             </div>
@@ -389,19 +392,13 @@ export default function ProfilePage() {
 
           {/* Action Buttons */}
           {editing && (
-            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-              <button
-                onClick={handleSave}
-                disabled={saving || !firstName.trim() || !lastName.trim()}
-                className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
+            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-100">
+              <button onClick={handleSave} disabled={saving || !firstName.trim() || !lastName.trim()}
+                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed">
                 {saving ? "Saving..." : "Save Changes"}
               </button>
-              <button
-                onClick={handleCancel}
-                disabled={saving}
-                className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition font-semibold"
-              >
+              <button onClick={handleCancel} disabled={saving}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-xl text-sm font-semibold transition">
                 Cancel
               </button>
             </div>
@@ -409,31 +406,34 @@ export default function ProfilePage() {
         </div>
 
         {/* Quick Links */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Links</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <Link
-              href="/volunteer-hours"
-              className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-            >
-              <h3 className="font-semibold text-gray-900 mb-1">My Hours</h3>
-              <p className="text-sm text-gray-600">View your volunteer hours and history</p>
-            </Link>
-            <Link
-              href="/opportunities"
-              className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-            >
-              <h3 className="font-semibold text-gray-900 mb-1">Find Opportunities</h3>
-              <p className="text-sm text-gray-600">Browse and register for events</p>
-            </Link>
-            <Link
-              href="/my-schedule"
-              className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-            >
-              <h3 className="font-semibold text-gray-900 mb-1">My Schedule</h3>
-              <p className="text-sm text-gray-600">View your upcoming events</p>
-            </Link>
-          </div>
+        <div className="grid md:grid-cols-3 gap-3">
+          <Link href="/volunteer-hours" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-gray-200 hover:shadow-md transition-all group flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-sm text-gray-900">Hours Report</p>
+              <p className="text-xs text-gray-400 mt-0.5">View &amp; print your history</p>
+            </div>
+            <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <Link href="/opportunities" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-gray-200 hover:shadow-md transition-all group flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-sm text-gray-900">Opportunities</p>
+              <p className="text-xs text-gray-400 mt-0.5">Browse upcoming events</p>
+            </div>
+            <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <Link href="/my-schedule" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-gray-200 hover:shadow-md transition-all group flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-sm text-gray-900">My Schedule</p>
+              <p className="text-xs text-gray-400 mt-0.5">Upcoming commitments</p>
+            </div>
+            <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
       </div>
     </div>

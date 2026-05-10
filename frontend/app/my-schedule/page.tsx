@@ -315,19 +315,10 @@ END:VCALENDAR`;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div
-        className="text-white py-12 relative overflow-hidden bg-white"
-        style={{
-          backgroundImage: `url('/handprint.png')`,
-          backgroundPosition: 'center',
-          backgroundSize: 'auto 100%',
-          backgroundRepeat: 'repeat-x'
-        }}
-      >
-        <div className="container mx-auto px-4 relative z-10">
-          <h1 className="text-6xl font-bold mb-4 text-gray-900" style={{ textShadow: '3px 3px 6px rgba(255,255,255,0.9), -2px -2px 4px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.8)' }}>My Schedule</h1>
-          <p className="text-2xl font-semibold text-gray-800" style={{ textShadow: '2px 2px 4px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9)' }}>Your upcoming volunteer commitments</p>
+      <div className="page-hero">
+        <div className="relative z-10 container mx-auto px-4">
+          <h1 className="text-3xl font-bold text-gray-900">My Schedule</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Your upcoming volunteer commitments</p>
         </div>
       </div>
 
@@ -339,12 +330,9 @@ END:VCALENDAR`;
         )}
 
         {registrations.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <p className="text-gray-600 text-lg mb-4">You don't have any scheduled events yet.</p>
-            <a
-              href="/opportunities"
-              className="inline-block bg-gradient-to-r from-primary-600 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition"
-            >
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-14 text-center">
+            <p className="text-gray-500 text-sm mb-4">No scheduled events yet.</p>
+            <a href="/opportunities" className="inline-block bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition">
               Browse Opportunities
             </a>
           </div>
@@ -352,26 +340,22 @@ END:VCALENDAR`;
           <div className="space-y-4">
             {/* Toggle between upcoming and past events */}
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                {showPastEvents ? "Past Events" : "Upcoming Events"} ({displayedRegistrations.filter(r => eventDetails[r.eventId]).length})
+              <h2 className="text-base font-semibold text-gray-700">
+                {showPastEvents ? "Past" : "Upcoming"} — {displayedRegistrations.filter(r => eventDetails[r.eventId]).length} {displayedRegistrations.filter(r => eventDetails[r.eventId]).length === 1 ? "event" : "events"}
               </h2>
-              <div className="flex gap-2">
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-1 inline-flex gap-1">
                 <button
                   onClick={() => setShowPastEvents(false)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition ${
-                    !showPastEvents
-                      ? "bg-primary-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
+                    !showPastEvents ? "bg-primary-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
                   }`}
                 >
                   Upcoming ({upcomingRegistrations.length})
                 </button>
                 <button
                   onClick={() => setShowPastEvents(true)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition ${
-                    showPastEvents
-                      ? "bg-primary-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
+                    showPastEvents ? "bg-primary-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
                   }`}
                 >
                   Past ({pastRegistrations.length})
@@ -380,11 +364,9 @@ END:VCALENDAR`;
             </div>
 
             {displayedRegistrations.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                <p className="text-gray-600 text-lg">
-                  {showPastEvents
-                    ? "You don't have any past events."
-                    : "You don't have any upcoming events."}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+                <p className="text-gray-500 text-sm">
+                  {showPastEvents ? "No past events on record." : "Nothing scheduled — browse opportunities to get started."}
                 </p>
               </div>
             ) : (
@@ -427,12 +409,12 @@ END:VCALENDAR`;
               return (
                 <div
                   key={registration._id}
-                  className={`bg-white border rounded-lg p-6 hover:shadow-lg transition ${
-                    isCancelled ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                  className={`bg-white border rounded-2xl p-6 transition-all ${
+                    isCancelled ? 'border-red-200 bg-red-50' : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
                   }`}
                 >
                   {isCancelled && (
-                    <div className="mb-4 bg-red-100 border border-red-300 rounded-lg p-3">
+                    <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-3">
                       <div className="flex items-center gap-2 text-red-800 font-semibold mb-1">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -451,50 +433,48 @@ END:VCALENDAR`;
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h3 className={`text-2xl font-semibold ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+                          <h3 className={`text-xl font-bold ${isCancelled ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                             {event.title}
                           </h3>
                           <p className={`font-medium ${isCancelled ? 'text-gray-400' : 'text-primary-600'}`}>
                             {event.organization}
                           </p>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${
-                          isCancelled ? 'bg-gray-200 text-gray-600' : 'bg-primary-100 text-primary-700'
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                          isCancelled ? 'bg-gray-100 text-gray-500' : 'bg-gray-100 text-gray-600'
                         }`}>
                           {event.category}
                         </span>
                       </div>
 
-                      <div className={`space-y-2 mb-4 ${isCancelled ? 'text-gray-500' : 'text-gray-600'}`}>
+                      <div className={`space-y-2 text-sm mb-4 ${isCancelled ? 'text-gray-400' : 'text-gray-600'}`}>
                         <p className="flex items-center gap-2">
-                          <span>📅</span>
-                          <span className="font-medium">
-                            {formatDate(event.date)}
-                          </span>
+                          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="font-medium text-gray-800">{formatDate(event.date)}</span>
                         </p>
                         <p className="flex items-center gap-2">
-                          <span>🕒</span>
-                          <span>
-                            {formatTime(event.startTime)} - {formatTime(event.endTime)}
-                          </span>
+                          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>{formatTime(event.startTime)} – {formatTime(event.endTime)}</span>
                         </p>
                         <p className="flex items-center gap-2">
-                          <span>📍</span>
-                          <a
-                            href={getGoogleMapsUrl(event.location)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                          >
+                          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <a href={getGoogleMapsUrl(event.location)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 hover:underline">
                             {event.location}
                           </a>
                         </p>
                         {registration.totalAttendees > 1 && (
                           <p className="flex items-center gap-2">
-                            <span>👥</span>
-                            <span className="font-medium">
-                              Group Registration: {registration.totalAttendees} {registration.totalAttendees === 1 ? 'person' : 'people'} (You + {registration.additionalAttendees} {registration.additionalAttendees === 1 ? 'other' : 'others'})
-                            </span>
+                            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span className="font-medium">Group of {registration.totalAttendees} (you + {registration.additionalAttendees} {registration.additionalAttendees === 1 ? 'other' : 'others'})</span>
                           </p>
                         )}
                       </div>
@@ -536,7 +516,7 @@ END:VCALENDAR`;
                         <>
                           <button
                             onClick={() => addToCalendar(registration)}
-                            className="bg-gradient-to-r from-green-600 to-green-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition font-semibold whitespace-nowrap flex items-center gap-2"
+                            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition flex items-center gap-2"
                           >
                             <span>📅</span>
                             Add to Calendar
@@ -544,14 +524,14 @@ END:VCALENDAR`;
                           <button
                             onClick={() => openEditModal(registration)}
                             disabled={updating || cancellingId === registration.eventId}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition font-semibold whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Edit Registration
                           </button>
                           <button
                             onClick={() => handleCancelRegistration(registration.eventId)}
                             disabled={cancellingId === registration.eventId || updating}
-                            className="bg-red-100 text-red-700 px-6 py-3 rounded-lg hover:bg-red-200 transition font-semibold whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-red-50 text-red-600 px-5 py-2.5 rounded-xl hover:bg-red-100 transition text-sm font-semibold whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {cancellingId === registration.eventId
                               ? "Cancelling..."
@@ -751,7 +731,7 @@ END:VCALENDAR`;
               <button
                 onClick={confirmEditRegistration}
                 disabled={updating}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:shadow-lg transition font-semibold disabled:opacity-50"
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition disabled:opacity-50"
               >
                 {updating ? 'Updating...' : 'Update Registration'}
               </button>

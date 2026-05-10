@@ -77,13 +77,13 @@ export default function WaiverPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-8">
-            <h1 className="text-3xl font-bold text-white text-center">
+          <div className="bg-primary-600 px-6 py-8">
+            <h1 className="text-2xl font-bold text-white text-center">
               Volunteer Waiver and Release Agreement
             </h1>
-            <p className="text-white text-center mt-2 text-sm">
+            <p className="text-white/70 text-center mt-1 text-sm">
               Inspired Hearts and Hands (IH2)
             </p>
           </div>
@@ -208,7 +208,7 @@ export default function WaiverPage() {
               </div>
             )}
 
-            <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="mb-6 bg-amber-50 border border-amber-100 rounded-xl p-4">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -227,7 +227,7 @@ export default function WaiverPage() {
               <button
                 type="submit"
                 disabled={!agreed || submitting}
-                className="flex-1 py-3 px-6 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="flex-1 py-2.5 px-6 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? "Submitting..." : "I Agree - Complete Registration"}
               </button>

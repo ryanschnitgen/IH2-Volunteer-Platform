@@ -396,163 +396,112 @@ export default function VolunteerHours() {
 
       <div className="container mx-auto px-4 py-8">
         {/* Print Report Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8 print:hidden">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Print Volunteer Report</h2>
-          <p className="text-gray-600 mb-4">Select a date range to generate your volunteer hours report</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8 print:hidden">
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Print Volunteer Report</h2>
+          <p className="text-sm text-gray-500 mb-5">Select a date range to generate your hours report</p>
 
           {/* Quick Date Presets */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm font-medium text-gray-700 mb-3">Quick Date Ranges:</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setDatePreset('last-month')}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm font-medium"
-              >
-                Last Month
-              </button>
-              <button
-                onClick={() => setDatePreset('last-quarter')}
-                className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-medium"
-              >
-                Last Quarter
-              </button>
-              <button
-                onClick={() => setDatePreset('last-year')}
-                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition text-sm font-medium"
-              >
-                Last Year
-              </button>
-              <button
-                onClick={() => setDatePreset('clear')}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
-              >
-                Clear Dates
-              </button>
-            </div>
+          <div className="mb-5 flex flex-wrap gap-2">
+            <button onClick={() => setDatePreset('last-month')} className="px-3.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs font-medium">Last Month</button>
+            <button onClick={() => setDatePreset('last-quarter')} className="px-3.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs font-medium">Last Quarter</button>
+            <button onClick={() => setDatePreset('last-year')} className="px-3.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs font-medium">Last Year</button>
+            <button onClick={() => setDatePreset('clear')} className="px-3.5 py-1.5 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition text-xs font-medium">Clear</button>
           </div>
 
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[160px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Start date</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
             </div>
-
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+            <div className="flex-1 min-w-[160px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">End date</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
             </div>
-
-            <button
-              onClick={() => setShowPrintModal(true)}
-              disabled={filteredEvents.length === 0}
-              className="bg-primary-700 text-white px-6 py-2 rounded-lg hover:bg-primary-800 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Preview Report
+            <button onClick={() => setShowPrintModal(true)} disabled={filteredEvents.length === 0}
+              className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed">
+              Preview
             </button>
-
-            <button
-              onClick={handlePrint}
-              disabled={filteredEvents.length === 0}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              🖨️ Print Report
+            <button onClick={handlePrint} disabled={filteredEvents.length === 0}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print
             </button>
           </div>
 
           {(startDate || endDate) && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-gray-700">
-                <strong>Selected Period:</strong>{" "}
-                {startDate ? new Date(startDate).toLocaleDateString() : "All time"} -{" "}
-                {endDate ? new Date(endDate).toLocaleDateString() : "Present"}
-              </p>
-              <p className="text-sm text-gray-700 mt-1">
-                <strong>Events Found:</strong> {filteredEvents.length} | <strong>Total Hours:</strong> {totalHours.toFixed(2)}
-              </p>
+            <div className="mt-4 p-4 bg-gray-50 rounded-xl text-sm text-gray-600">
+              {startDate ? new Date(startDate).toLocaleDateString() : "All time"} – {endDate ? new Date(endDate).toLocaleDateString() : "present"} &nbsp;·&nbsp; {filteredEvents.length} events &nbsp;·&nbsp; {totalHours.toFixed(1)} hrs
             </div>
           )}
         </div>
 
         {/* Hours Summary Cards - Only visible on screen, not in print */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8 print:hidden">
-          <div className="bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-lg shadow-lg p-8">
-            <h3 className="text-lg font-semibold mb-2 opacity-90">
-              Lifetime Hours
-            </h3>
-            <p className="text-5xl font-bold mb-2">{lifetimeHours.toFixed(2)}</p>
-            <p className="text-sm opacity-80">Total hours volunteered</p>
+        <div className="grid md:grid-cols-3 gap-4 mb-8 print:hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Lifetime Hours</p>
+              <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-4xl font-bold text-primary-600 tabular-nums">{lifetimeHours.toFixed(1)}</p>
+            <p className="text-sm text-gray-500 mt-2">hours total</p>
             {(importedHours > 0 || manualHours > 0) && (
-              <div className="mt-4 pt-4 border-t border-white/30 space-y-1">
-                {importedHours > 0 && (
-                  <p className="text-xs opacity-90">
-                    Imported: {importedHours.toFixed(2)} hrs
-                  </p>
-                )}
-                <p className="text-xs opacity-90">
-                  Events: {eventHours.toFixed(2)} hrs
-                </p>
-                {manualHours > 0 && (
-                  <p className="text-xs opacity-90">
-                    Manual: {manualHours.toFixed(2)} hrs
-                  </p>
-                )}
+              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
+                {importedHours > 0 && <p className="text-xs text-gray-400">Imported: {importedHours.toFixed(1)} hrs</p>}
+                <p className="text-xs text-gray-400">Events: {eventHours.toFixed(1)} hrs</p>
+                {manualHours > 0 && <p className="text-xs text-gray-400">Manual: {manualHours.toFixed(1)} hrs</p>}
               </div>
             )}
           </div>
 
-          <div className="bg-gradient-to-br from-green-600 to-green-700 text-white rounded-lg shadow-lg p-8">
-            <h3 className="text-lg font-semibold mb-2 opacity-90">
-              {new Date().getFullYear()} Hours
-            </h3>
-            <p className="text-5xl font-bold mb-2">{yearlyHours.toFixed(2)}</p>
-            <p className="text-sm opacity-80">Hours this year</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{new Date().getFullYear()} Hours</p>
+              <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-4xl font-bold text-green-600 tabular-nums">{yearlyHours.toFixed(1)}</p>
+            <p className="text-sm text-gray-500 mt-2">hours this year</p>
             {(yearlyEventHours > 0 || yearlyManualHours > 0) && (
-              <div className="mt-4 pt-4 border-t border-white/30 space-y-1">
-                {yearlyEventHours > 0 && (
-                  <p className="text-xs opacity-90">
-                    Events: {yearlyEventHours.toFixed(2)} hrs
-                  </p>
-                )}
-                {yearlyManualHours > 0 && (
-                  <p className="text-xs opacity-90">
-                    Manual: {yearlyManualHours.toFixed(2)} hrs
-                  </p>
-                )}
+              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
+                {yearlyEventHours > 0 && <p className="text-xs text-gray-400">Events: {yearlyEventHours.toFixed(1)} hrs</p>}
+                {yearlyManualHours > 0 && <p className="text-xs text-gray-400">Manual: {yearlyManualHours.toFixed(1)} hrs</p>}
               </div>
             )}
           </div>
 
           {importedHours > 0 && (
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-lg shadow-lg p-8">
-              <h3 className="text-lg font-semibold mb-2 opacity-90">
-                Imported Hours
-              </h3>
-              <p className="text-5xl font-bold mb-2">{importedHours.toFixed(2)}</p>
-              <p className="text-sm opacity-80">From previous platform</p>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Imported</p>
+                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-4xl font-bold text-purple-600 tabular-nums">{importedHours.toFixed(1)}</p>
+              <p className="text-sm text-gray-500 mt-2">from legacy system</p>
             </div>
           )}
         </div>
 
         {/* Volunteer History */}
-        <div className="bg-white rounded-lg shadow-md p-6 print:hidden">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">My Volunteer History</h2>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 print:hidden">
+          <h2 className="text-base font-semibold text-gray-900 mb-5">Volunteer History</h2>
           {sortedEvents.length === 0 && manualHoursLogs.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
-              No volunteer history yet. Sign up for events to get started!
+            <p className="text-gray-400 text-center py-10 text-sm">
+              No history yet — sign up for events to get started.
             </p>
           ) : (
             <div className="space-y-3">
@@ -578,8 +527,8 @@ export default function VolunteerHours() {
                 .map((item) => (
                   <div
                     key={item.key}
-                    className={`border rounded-lg p-4 hover:shadow-md transition ${
-                      item.type === 'event' ? 'border-primary-100 bg-white' : 'border-gray-200 bg-gray-50'
+                    className={`border rounded-2xl p-4 transition-all ${
+                      item.type === 'event' ? 'border-gray-100 bg-white hover:border-gray-200' : 'border-gray-100 bg-gray-50/50'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-4">
