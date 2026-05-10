@@ -120,14 +120,15 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}
       <div className="page-hero">
-        <div className="relative z-10 container mx-auto px-4">
+        <div className="relative z-10 container mx-auto px-4 max-w-5xl">
+          <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-3">IH2 Volunteer Portal</p>
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center text-white text-xl font-bold shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-sm">
               {initials}
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {firstName}</h1>
-              <p className="text-gray-500 text-sm mt-0.5">{user.email}</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Good to see you, {firstName}</h1>
+              <p className="text-gray-400 text-sm mt-0.5">{user.email}</p>
             </div>
           </div>
         </div>
@@ -137,77 +138,107 @@ export default function Home() {
         {/* Stats */}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">This Month</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">This Month</p>
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
             <p className="text-4xl font-bold text-blue-600 tabular-nums">
               {loadingHours ? <span className="text-gray-200 animate-pulse">—</span> : monthlyHours.toFixed(1)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">hours volunteered</p>
+            <p className="text-sm text-gray-500 mt-2">hours volunteered</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{new Date().getFullYear()} Total</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{new Date().getFullYear()} Total</p>
+              <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+            </div>
             <p className="text-4xl font-bold text-primary-600 tabular-nums">
               {loadingHours ? <span className="text-gray-200 animate-pulse">—</span> : yearlyHours.toFixed(1)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">your hours this year</p>
+            <p className="text-sm text-gray-500 mt-2">your hours this year</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Community {new Date().getFullYear()}</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Community {new Date().getFullYear()}</p>
+              <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
             <p className="text-4xl font-bold text-green-600 tabular-nums">
               {loadingHours ? <span className="text-gray-200 animate-pulse">—</span> : communityHours.toFixed(1)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">all volunteers combined</p>
+            <p className="text-sm text-gray-500 mt-2">all volunteers combined</p>
           </div>
         </div>
 
         {/* Welcome + Quick Actions */}
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Welcome to Inspired Hearts and Hands</h2>
-            <div className="text-gray-600 text-sm leading-relaxed space-y-4">
-              <p>
-                Thank you for your dedication to IH2. Your volunteer portal gives you real-time access
-                to opportunities, your upcoming schedule, and your complete hours history from January 2022 forward.
-              </p>
-              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                <p className="font-semibold text-amber-900 text-sm mb-1">Keep your profile up to date</p>
-                <p className="text-amber-800 text-sm">
-                  Click your name in the navigation to update your contact info, address, and phone
-                  number so we can reach you about upcoming opportunities.
+            <h2 className="text-lg font-bold text-gray-900 mb-3">Making a difference together</h2>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Since 2012, Inspired Hearts and Hands has been at the heart of our community — delivering
+              food, supporting families in need, and building real, lasting connections. Every hour you
+              give makes that mission possible. We&apos;re glad you&apos;re here.
+            </p>
+            <div className="mt-6 pt-6 border-t border-gray-100 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Is your profile up to date?</p>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Your contact info helps us reach you about the right opportunities.{" "}
+                  <Link href="/profile" className="text-primary-600 hover:text-primary-700 font-medium">Update now →</Link>
                 </p>
               </div>
-              <p>
-                Use the navigation above to find volunteer opportunities, view your schedule,
-                and print your hours report.
-              </p>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <Link
-              href="/opportunities"
-              className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-4 rounded-2xl font-semibold transition-colors text-center text-sm shadow-sm"
-            >
-              View Opportunities
+          <div className="flex flex-col gap-2.5">
+            <Link href="/opportunities" className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-4 rounded-2xl transition-colors shadow-sm">
+              <p className="font-semibold text-sm">Find Opportunities</p>
+              <p className="text-xs text-white/60 mt-0.5">Browse upcoming events</p>
             </Link>
-            <Link
-              href="/my-schedule"
-              className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl font-semibold transition-colors text-center text-sm border border-gray-100 shadow-sm"
-            >
-              My Schedule
+            <Link href="/my-schedule" className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl transition-colors border border-gray-100 shadow-sm flex items-center justify-between group">
+              <div>
+                <p className="font-semibold text-sm">My Schedule</p>
+                <p className="text-xs text-gray-400 mt-0.5">Upcoming commitments</p>
+              </div>
+              <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
-            <Link
-              href="/volunteer-hours"
-              className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl font-semibold transition-colors text-center text-sm border border-gray-100 shadow-sm"
-            >
-              My Hours Report
+            <Link href="/volunteer-hours" className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl transition-colors border border-gray-100 shadow-sm flex items-center justify-between group">
+              <div>
+                <p className="font-semibold text-sm">Hours Report</p>
+                <p className="text-xs text-gray-400 mt-0.5">View &amp; print your history</p>
+              </div>
+              <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
-            <Link
-              href="/profile"
-              className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl font-semibold transition-colors text-center text-sm border border-gray-100 shadow-sm"
-            >
-              Edit My Profile
+            <Link href="/profile" className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl transition-colors border border-gray-100 shadow-sm flex items-center justify-between group">
+              <div>
+                <p className="font-semibold text-sm">Edit Profile</p>
+                <p className="text-xs text-gray-400 mt-0.5">Contact info &amp; preferences</p>
+              </div>
+              <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
           </div>
         </div>

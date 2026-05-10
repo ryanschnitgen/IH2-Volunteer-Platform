@@ -477,33 +477,33 @@ export default function Opportunities() {
 
         {/* View Toggle */}
         <div className="mb-6 flex justify-center">
-          <div className="bg-white rounded-lg shadow-md p-1 inline-flex">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-1 inline-flex gap-1">
             <button
               onClick={() => setViewMode("list")}
-              className={`px-6 py-2 rounded-md font-semibold transition ${
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${
                 viewMode === "list"
-                  ? "bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-md"
-                  : "text-gray-600 hover:text-gray-800"
+                  ? "bg-primary-600 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
               }`}
             >
-              📋 List View
+              List
             </button>
             <button
               onClick={() => setViewMode("calendar")}
-              className={`px-6 py-2 rounded-md font-semibold transition ${
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${
                 viewMode === "calendar"
-                  ? "bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-md"
-                  : "text-gray-600 hover:text-gray-800"
+                  ? "bg-primary-600 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
               }`}
             >
-              📅 Calendar View
+              Calendar
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="mb-6 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter Opportunities</h3>
+        <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Filter</h3>
           <div className="grid md:grid-cols-4 gap-4">
             {/* Category Filter */}
             <div>
@@ -687,12 +687,12 @@ export default function Opportunities() {
         {/* List View */}
         {viewMode === "list" && (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Upcoming Opportunities
+            <h2 className="text-base font-semibold text-gray-700 mb-4">
+              {sortedOpportunities.length} upcoming {sortedOpportunities.length === 1 ? "opportunity" : "opportunities"}
             </h2>
             {sortedOpportunities.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg">
-                <p className="text-gray-500">No active opportunities available at this time. Check back soon!</p>
+              <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                <p className="text-gray-500 text-sm">No active opportunities right now — check back soon.</p>
               </div>
             ) : (
               sortedOpportunities.map((opportunity) => {
@@ -702,98 +702,108 @@ export default function Opportunities() {
                 return (
                   <div
                     key={opportunity._id}
-                    className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition"
+                    className="bg-white border border-gray-100 rounded-2xl p-6 hover:border-gray-200 hover:shadow-md transition-all"
                   >
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <h3 className="text-2xl font-semibold text-gray-800">
+                            <h3 className="text-xl font-bold text-gray-900">
                               {opportunity.title}
                             </h3>
-                            <p className="text-primary-600 font-medium">
+                            <p className="text-primary-600 text-sm font-medium mt-0.5">
                               {opportunity.organization}
                             </p>
                           </div>
-                          <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm whitespace-nowrap">
+                          <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
                             {opportunity.eventCategory}
                           </span>
                         </div>
 
-                        <div className="space-y-2 text-gray-600 mb-4">
+                        <div className="space-y-2 text-sm text-gray-600 mb-4">
                           <p className="flex items-center gap-2">
-                            <span>📅</span>
-                            <span className="font-medium">
+                            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="font-medium text-gray-800">
                               {formatDate(new Date(opportunity.date))}
                             </span>
                           </p>
                           <p className="flex items-center gap-2">
-                            <span>🕒</span>
-                            <span>
-                              {formatTime(opportunity.startTime)} - {formatTime(opportunity.endTime)}
-                            </span>
+                            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{formatTime(opportunity.startTime)} – {formatTime(opportunity.endTime)}</span>
                           </p>
                           <p className="flex items-center gap-2">
-                            <span>📍</span>
+                            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                             <a
                               href={getGoogleMapsUrl(opportunity.location)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                              className="text-blue-600 hover:text-blue-700 hover:underline"
                             >
                               {opportunity.location}
                             </a>
                           </p>
                           <p className="flex items-center gap-2">
-                            <span>👥</span>
+                            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
                             <span>
-                              {opportunity.spotsRemaining} / {opportunity.spotsAvailable} spots available
+                              <span className={opportunity.spotsRemaining <= 3 && opportunity.spotsRemaining > 0 ? "text-amber-600 font-semibold" : ""}>
+                                {opportunity.spotsRemaining}
+                              </span>
+                              {" "}/ {opportunity.spotsAvailable} spots available
                             </span>
                           </p>
                           {registration && registration.totalAttendees > 1 && (
-                            <p className="flex items-center gap-2">
-                              <span>✓</span>
-                              <span className="font-medium text-green-700">
-                                You're registered with {registration.totalAttendees} {registration.totalAttendees === 1 ? 'person' : 'people'}
-                              </span>
+                            <p className="flex items-center gap-2 text-green-700 font-medium">
+                              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>Registered with {registration.totalAttendees} {registration.totalAttendees === 1 ? 'person' : 'people'}</span>
                             </p>
                           )}
                         </div>
 
-                        <p className="text-gray-700 mb-4">
+                        <p className="text-sm text-gray-600 leading-relaxed">
                           {opportunity.description}
                         </p>
                       </div>
 
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-2 shrink-0">
                         {registration ? (
                           <>
                             <button
                               onClick={() => openEditModal(registration, opportunity)}
                               disabled={registeringId === opportunity._id || cancellingEventId === opportunity._id}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold whitespace-nowrap transition disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Edit Registration
                             </button>
                             <button
                               onClick={() => handleCancelRegistration(opportunity._id)}
                               disabled={registeringId === opportunity._id || cancellingEventId === opportunity._id}
-                              className="bg-red-100 text-red-700 px-6 py-2 rounded-lg hover:bg-red-200 transition font-semibold whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="bg-red-50 text-red-600 px-5 py-2.5 rounded-xl hover:bg-red-100 transition text-sm font-semibold whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {cancellingEventId === opportunity._id ? "Cancelling..." : "Cancel Registration"}
+                              {cancellingEventId === opportunity._id ? "Cancelling..." : "Cancel"}
                             </button>
                           </>
                         ) : isFull ? (
                           <button
                             disabled
-                            className="bg-gray-400 text-white px-8 py-3 rounded-lg font-semibold whitespace-nowrap cursor-not-allowed"
+                            className="bg-gray-100 text-gray-400 px-6 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap cursor-not-allowed"
                           >
                             Event Full
                           </button>
                         ) : (
                           <button
                             onClick={() => openRegistrationModal(opportunity)}
-                            className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition font-semibold whitespace-nowrap"
+                            className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition"
                           >
                             Sign Up
                           </button>
@@ -801,9 +811,9 @@ export default function Opportunities() {
                         {opportunity.status === "active" && (
                           <button
                             onClick={() => copyEventLink(opportunity._id)}
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-semibold whitespace-nowrap transition flex items-center justify-center gap-2"
+                            className="bg-gray-50 hover:bg-gray-100 text-gray-600 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition flex items-center justify-center gap-1.5"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                             </svg>
                             Share

@@ -70,18 +70,19 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Sign in</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            New volunteer?{" "}
-            <Link href="/signup" className="font-medium text-primary-600 hover:text-primary-700">
-              Create an account
-            </Link>
+    <div className="min-h-screen bg-gray-50">
+      <div className="page-hero text-center">
+        <div className="relative z-10 px-4">
+          <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-3">Inspired Hearts and Hands</p>
+          <h1 className="text-3xl font-bold text-gray-900">Volunteers change everything.</h1>
+          <p className="text-gray-500 text-sm mt-2 max-w-xs mx-auto">
+            Find opportunities, track your hours, and see the impact you&apos;re making.
           </p>
         </div>
+      </div>
 
+      <div className="flex justify-center px-4 py-8">
+        <div className="w-full max-w-sm">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
           {error && (
             <div className="mb-5 bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
@@ -163,6 +164,12 @@ export default function Login() {
               Sign in with Google
             </button>
           </div>
+        </div>
+
+        <p className="text-center text-sm text-gray-500 mt-5">
+          New to IH2?{" "}
+          <Link href="/signup" className="font-semibold text-primary-600 hover:text-primary-700">Create an account</Link>
+        </p>
         </div>
       </div>
     </div>
