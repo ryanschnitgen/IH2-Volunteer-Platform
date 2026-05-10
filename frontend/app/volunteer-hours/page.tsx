@@ -77,7 +77,6 @@ export default function VolunteerHours() {
         const attendedEvents = registrationsData.registrations.filter((reg: any) => reg.attended || reg.checkedIn);
 
         // Fetch event details to get descriptions
-        const eventIds = [...new Set(attendedEvents.map((reg: any) => reg.eventId))];
         const eventsRes = await fetch('/api/events');
         const eventsData = await eventsRes.json();
 
@@ -388,18 +387,10 @@ export default function VolunteerHours() {
       </div>
 
       {/* Header */}
-      <div
-        className="text-white py-12 print:hidden relative overflow-hidden bg-white"
-        style={{
-          backgroundImage: `url('/handprint.png')`,
-          backgroundPosition: 'center',
-          backgroundSize: 'auto 100%',
-          backgroundRepeat: 'repeat-x'
-        }}
-      >
-        <div className="container mx-auto px-4 relative z-10">
-          <h1 className="text-6xl font-bold mb-4 text-gray-900" style={{ textShadow: '3px 3px 6px rgba(255,255,255,0.9), -2px -2px 4px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.8)' }}>My Volunteer Hours</h1>
-          <p className="text-2xl font-semibold text-gray-800" style={{ textShadow: '2px 2px 4px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9)' }}>Track your volunteer contributions and impact</p>
+      <div className="page-hero print:hidden">
+        <div className="relative z-10 container mx-auto px-4">
+          <h1 className="text-3xl font-bold text-gray-900">My Volunteer Hours</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Track your volunteer contributions and impact</p>
         </div>
       </div>
 
@@ -552,6 +543,67 @@ export default function VolunteerHours() {
               </h3>
               <p className="text-5xl font-bold mb-2">{importedHours.toFixed(2)}</p>
               <p className="text-sm opacity-80">From previous platform</p>
+            </div>
+          )}
+        </div>
+
+        {/* Volunteer History */}
+        <div className="bg-white rounded-lg shadow-md p-6 print:hidden">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">My Volunteer History</h2>
+          {sortedEvents.length === 0 && manualHoursLogs.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">
+              No volunteer history yet. Sign up for events to get started!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {[
+                ...sortedEvents.map(e => ({
+                  key: e._id,
+                  type: 'event' as const,
+                  date: e.eventDate,
+                  title: e.eventTitle,
+                  category: e.eventCategory,
+                  hours: e.hoursCompleted,
+                })),
+                ...manualHoursLogs.map(l => ({
+                  key: l._id,
+                  type: 'manual' as const,
+                  date: l.date,
+                  title: l.notes || 'Manual Hours Entry',
+                  category: 'Manual',
+                  hours: l.hours,
+                })),
+              ]
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .map((item) => (
+                  <div
+                    key={item.key}
+                    className={`border rounded-lg p-4 hover:shadow-md transition ${
+                      item.type === 'event' ? 'border-primary-100 bg-white' : 'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-semibold text-gray-900 truncate">{item.title}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                            item.type === 'event'
+                              ? 'bg-primary-100 text-primary-700'
+                              : 'bg-gray-200 text-gray-700'
+                          }`}>
+                            {item.category}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-500">{formatDate(item.date)}</div>
+                      </div>
+                      <div className={`text-xl font-bold whitespace-nowrap ${
+                        item.type === 'event' ? 'text-primary-600' : 'text-gray-600'
+                      }`}>
+                        {item.hours.toFixed(2)} hrs
+                      </div>
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
         </div>

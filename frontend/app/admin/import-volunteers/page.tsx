@@ -229,14 +229,21 @@ export default function ImportVolunteers() {
             <h3 className="font-bold text-lg mb-2">✓ Import Successful</h3>
             <div className="space-y-1 text-sm">
               <p><strong>Total Rows:</strong> {result.results.total}</p>
-              <p><strong>Volunteers Updated (Email + Username):</strong> {result.results.updated}</p>
-              <p><strong>New Volunteers Created:</strong> {result.results.created}</p>
+              <p><strong>Matched Existing Volunteers:</strong> {result.results.matched || result.results.updated}</p>
+              <p><strong>Actually Modified:</strong> {result.results.updated}</p>
+              <p><strong>New Volunteers Created:</strong> {result.results.created} {result.results.attemptedCreate > 0 && `(attempted: ${result.results.attemptedCreate})`}</p>
               {result.results.skipped > 0 && (
-                <p className="text-orange-700"><strong>Skipped:</strong> {result.results.skipped}</p>
+                <p className="text-orange-700"><strong>Skipped (Missing Name):</strong> {result.results.skipped}</p>
               )}
               {result.results.errors && result.results.errors.length > 0 && (
                 <p className="text-red-700"><strong>Errors:</strong> {result.results.errors.length}</p>
               )}
+              {/* Summary breakdown */}
+              <div className="mt-3 pt-3 border-t border-green-300">
+                <p className="text-xs text-green-700">
+                  <strong>Breakdown:</strong> {result.results.matched || 0} matched + {result.results.created || 0} created + {result.results.skipped || 0} skipped = {(result.results.matched || 0) + (result.results.created || 0) + (result.results.skipped || 0)} of {result.results.total}
+                </p>
+              </div>
             </div>
             {result.results.skippedDetails && result.results.skippedDetails.length > 0 && (
               <details className="mt-4" open>
@@ -270,12 +277,19 @@ export default function ImportVolunteers() {
               </details>
             )}
             {result.results.errors && result.results.errors.length > 0 && (
-              <details className="mt-4">
-                <summary className="cursor-pointer font-semibold">View Errors</summary>
-                <pre className="text-xs mt-2 overflow-auto bg-white p-2 rounded">
+              <details className="mt-4" open>
+                <summary className="cursor-pointer font-semibold text-red-700">❌ View Errors ({result.results.errors.length})</summary>
+                <pre className="text-xs mt-2 overflow-auto bg-white p-2 rounded max-h-64 text-red-800">
                   {JSON.stringify(result.results.errors, null, 2)}
                 </pre>
               </details>
+            )}
+            {/* Show warning if creates failed */}
+            {result.results.attemptedCreate > 0 && result.results.created === 0 && (
+              <div className="mt-4 bg-red-100 border border-red-300 rounded p-3">
+                <p className="text-red-800 font-semibold">⚠️ {result.results.attemptedCreate} volunteers failed to create!</p>
+                <p className="text-red-700 text-sm mt-1">Check the server logs for details, or errors above.</p>
+              </div>
             )}
           </div>
         )}

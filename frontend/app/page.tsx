@@ -29,34 +29,23 @@ export default function Home() {
   const loadCommunityHours = async () => {
     try {
       const currentYear = new Date().getFullYear();
-
-      // Fetch both hours logs and event registrations
       const [hoursRes, registrationsRes] = await Promise.all([
         fetch('/api/hours/all'),
         fetch('/api/events/registrations/all')
       ]);
-
       const hoursData = await hoursRes.json();
       const registrationsData = await registrationsRes.json();
 
       if (hoursRes.ok && registrationsRes.ok) {
-        // Calculate event hours (from registrations)
         const eventHours = (registrationsData.registrations || [])
           .filter((reg: any) => {
-            const eventDate = new Date(reg.eventDate);
-            return eventDate.getFullYear() === currentYear &&
-                   reg.hoursCompleted > 0 &&
-                   (reg.checkedIn || reg.attended) &&
-                   reg.cancelled !== true;
+            const d = new Date(reg.eventDate);
+            return d.getFullYear() === currentYear && reg.hoursCompleted > 0 && (reg.checkedIn || reg.attended) && reg.cancelled !== true;
           })
           .reduce((sum: number, reg: any) => sum + reg.hoursCompleted, 0);
 
-        // Calculate manual hours (exclude auto-assigned to avoid double-counting)
         const manualHours = (hoursData.hoursLogs || [])
-          .filter((log: any) => {
-            const logDate = new Date(log.date);
-            return logDate.getFullYear() === currentYear && !log.autoAssigned;
-          })
+          .filter((log: any) => new Date(log.date).getFullYear() === currentYear && !log.autoAssigned)
           .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
 
         setCommunityHours(eventHours + manualHours);
@@ -68,54 +57,37 @@ export default function Home() {
 
   const loadYearlyHours = async () => {
     if (!user) return;
-
     try {
       setLoadingHours(true);
-
-      // Fetch registrations and hours logs
       const [registrationsRes, hoursLogsRes] = await Promise.all([
         fetch(`/api/events/registrations?userId=${user.uid}`),
         fetch(`/api/hours?userId=${user.uid}`)
       ]);
-
       const registrationsData = await registrationsRes.json();
       const hoursLogsData = await hoursLogsRes.json();
 
       const currentYear = new Date().getFullYear();
       const currentMonth = new Date().getMonth();
 
-      // Calculate hours from attended events this year
       const eventHours = (registrationsData.registrations || [])
-        .filter((reg: any) => {
-          const eventDate = new Date(reg.eventDate);
-          return eventDate.getFullYear() === currentYear && (reg.attended || reg.checkedIn);
-        })
+        .filter((reg: any) => new Date(reg.eventDate).getFullYear() === currentYear && (reg.attended || reg.checkedIn))
         .reduce((sum: number, reg: any) => sum + (reg.hoursCompleted || 0), 0);
 
-      // Calculate manual hours this year
       const manualHours = (hoursLogsData.hoursLogs || [])
-        .filter((log: any) => {
-          const logDate = new Date(log.date);
-          return logDate.getFullYear() === currentYear && !log.autoAssigned;
-        })
+        .filter((log: any) => new Date(log.date).getFullYear() === currentYear && !log.autoAssigned)
         .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
 
-      // Calculate this month's hours
       const monthEventHours = (registrationsData.registrations || [])
         .filter((reg: any) => {
-          const eventDate = new Date(reg.eventDate);
-          return eventDate.getFullYear() === currentYear &&
-                 eventDate.getMonth() === currentMonth &&
-                 (reg.attended || reg.checkedIn);
+          const d = new Date(reg.eventDate);
+          return d.getFullYear() === currentYear && d.getMonth() === currentMonth && (reg.attended || reg.checkedIn);
         })
         .reduce((sum: number, reg: any) => sum + (reg.hoursCompleted || 0), 0);
 
       const monthManualHours = (hoursLogsData.hoursLogs || [])
         .filter((log: any) => {
-          const logDate = new Date(log.date);
-          return logDate.getFullYear() === currentYear &&
-                 logDate.getMonth() === currentMonth &&
-                 !log.autoAssigned;
+          const d = new Date(log.date);
+          return d.getFullYear() === currentYear && d.getMonth() === currentMonth && !log.autoAssigned;
         })
         .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
 
@@ -130,165 +102,115 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent" />
       </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
+
+  const initials = user.displayName
+    ? user.displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : user.email?.[0].toUpperCase() ?? '?';
+
+  const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Volunteer';
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section with Handprints */}
-      <div
-        className="relative overflow-hidden bg-white py-12 mb-8"
-        style={{
-          backgroundImage: `url('/handprint.png')`,
-          backgroundPosition: 'center',
-          backgroundSize: 'auto 100%',
-          backgroundRepeat: 'repeat-x'
-        }}
-      >
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4" style={{ textShadow: '3px 3px 6px rgba(255,255,255,0.9), -2px -2px 4px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.8)' }}>
-            Welcome to Your Volunteer Portal
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-800 font-semibold" style={{ textShadow: '2px 2px 4px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9)' }}>
-            Making a difference together since 2012
-          </p>
+      {/* Hero */}
+      <div className="page-hero">
+        <div className="relative z-10 container mx-auto px-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center text-white text-xl font-bold shrink-0 shadow-sm">
+              {initials}
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {firstName}</h1>
+              <p className="text-gray-500 text-sm mt-0.5">{user.email}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Profile and Hours Section */}
-        <section className="bg-white rounded-lg shadow-md p-8 mb-8">
-          <div className="flex items-center gap-6 mb-6">
-            {/* Profile Image */}
-            <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 text-3xl font-bold">
-              {user.displayName
-                ? user.displayName.split(' ').map(n => n[0]).join('').toUpperCase()
-                : user.email?.[0].toUpperCase()}
-            </div>
-
-            {/* User Info */}
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                {user.displayName || user.email?.split('@')[0]}
-              </h1>
-              <p className="text-gray-600">{user.email}</p>
-            </div>
+      <main className="container mx-auto px-4 py-8 max-w-5xl">
+        {/* Stats */}
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">This Month</p>
+            <p className="text-4xl font-bold text-blue-600 tabular-nums">
+              {loadingHours ? <span className="text-gray-200 animate-pulse">—</span> : monthlyHours.toFixed(1)}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">hours volunteered</p>
           </div>
 
-          {/* Volunteer Hours Cards */}
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-l-4 border-blue-600 shadow-md hover:shadow-lg transition">
-              <h3 className="text-sm font-semibold text-gray-600 uppercase mb-2">
-                Hours This Month
-              </h3>
-              <p className="text-4xl font-bold text-blue-700">
-                {loadingHours ? "..." : monthlyHours.toFixed(2)}
-              </p>
-              <p className="text-sm text-gray-600 mt-1">Your monthly hours</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 border-l-4 border-primary-600 shadow-md hover:shadow-lg transition">
-              <h3 className="text-sm font-semibold text-gray-600 uppercase mb-2">
-                Hours This Year ({new Date().getFullYear()})
-              </h3>
-              <p className="text-4xl font-bold text-primary-700">
-                {loadingHours ? "..." : yearlyHours.toFixed(2)}
-              </p>
-              <p className="text-sm text-gray-600 mt-1">Your yearly hours</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border-l-4 border-green-600 shadow-md hover:shadow-lg transition">
-              <h3 className="text-sm font-semibold text-gray-600 uppercase mb-2">
-                Community Hours {new Date().getFullYear()}
-              </h3>
-              <p className="text-4xl font-bold text-green-700">
-                {loadingHours ? "..." : communityHours.toFixed(2)}
-              </p>
-              <p className="text-sm text-gray-600 mt-1">All volunteers combined</p>
-            </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{new Date().getFullYear()} Total</p>
+            <p className="text-4xl font-bold text-primary-600 tabular-nums">
+              {loadingHours ? <span className="text-gray-200 animate-pulse">—</span> : yearlyHours.toFixed(1)}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">your hours this year</p>
           </div>
-        </section>
 
-        {/* Welcome Message Section */}
-        <section className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Welcome to Inspired Hearts and Hands (IH2)
-          </h2>
-
-          <div className="prose max-w-none text-gray-700 space-y-4">
-            <p>
-              Welcome to the new and improved Volunteer Portal for Inspired Hearts and Hands (IH2).
-              We are so very thankful for the many volunteers that support each of our campaigns.
-              As we continue to grow, we need to have a more efficient way for volunteers to view
-              available opportunities and signup for activities, while also tracking and managing
-              their personal volunteer hours.
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Community {new Date().getFullYear()}</p>
+            <p className="text-4xl font-bold text-green-600 tabular-nums">
+              {loadingHours ? <span className="text-gray-200 animate-pulse">—</span> : communityHours.toFixed(1)}
             </p>
+            <p className="text-sm text-gray-500 mt-1">all volunteers combined</p>
+          </div>
+        </div>
 
-            <p>
-              Your new myImpact Page will provide you first-hand access to the many volunteer IH2
-              volunteer opportunities on a real-time basis. We humbly ask that you remain patient
-              as we make this transition.
-            </p>
-
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-orange-400 p-6 my-6 shadow-sm">
-              <h3 className="text-lg font-bold text-orange-800 mb-3">IMPORTANT</h3>
+        {/* Welcome + Quick Actions */}
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Welcome to Inspired Hearts and Hands</h2>
+            <div className="text-gray-600 text-sm leading-relaxed space-y-4">
               <p>
-                We recommend that you update your profile information and contact details. To access
-                your profile, simply click on your name in the top right corner of the screen. From
-                there, you can update your contact information, address, phone number, and other
-                personal details to ensure we can reach you about upcoming volunteer opportunities
-                and commitments.
+                Thank you for your dedication to IH2. Your volunteer portal gives you real-time access
+                to opportunities, your upcoming schedule, and your complete hours history from January 2022 forward.
+              </p>
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                <p className="font-semibold text-amber-900 text-sm mb-1">Keep your profile up to date</p>
+                <p className="text-amber-800 text-sm">
+                  Click your name in the navigation to update your contact info, address, and phone
+                  number so we can reach you about upcoming opportunities.
+                </p>
+              </div>
+              <p>
+                Use the navigation above to find volunteer opportunities, view your schedule,
+                and print your hours report.
               </p>
             </div>
-
-            <h3 className="text-xl font-bold text-gray-800 mt-8 mb-3">
-              NAVIGATION AND SIGNUP
-            </h3>
-            <p>
-              This is the exciting part. Your portal will provide you access to all of the available
-              volunteer opportunities, your schedule of commitments, and a report of all completed
-              volunteer hours (from January 2022 forward). You are also able to communicate directly
-              with us through the system. The menu at the top of the page will help you navigate to
-              the various areas of the portal.
-            </p>
-
           </div>
 
-          {/* Quick Actions */}
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-            <div className="flex flex-wrap gap-4">
-              <Link
-                href="/opportunities"
-                className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition"
-              >
-                View Opportunities
-              </Link>
-              <Link
-                href="/my-schedule"
-                className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
-              >
-                My Schedule
-              </Link>
-              <Link
-                href="/profile"
-                className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
-              >
-                My Profile
-              </Link>
-            </div>
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/opportunities"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-4 rounded-2xl font-semibold transition-colors text-center text-sm shadow-sm"
+            >
+              View Opportunities
+            </Link>
+            <Link
+              href="/my-schedule"
+              className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl font-semibold transition-colors text-center text-sm border border-gray-100 shadow-sm"
+            >
+              My Schedule
+            </Link>
+            <Link
+              href="/volunteer-hours"
+              className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl font-semibold transition-colors text-center text-sm border border-gray-100 shadow-sm"
+            >
+              My Hours Report
+            </Link>
+            <Link
+              href="/profile"
+              className="bg-white hover:bg-gray-50 text-gray-800 px-5 py-4 rounded-2xl font-semibold transition-colors text-center text-sm border border-gray-100 shadow-sm"
+            >
+              Edit My Profile
+            </Link>
           </div>
-        </section>
+        </div>
       </main>
     </div>
   );

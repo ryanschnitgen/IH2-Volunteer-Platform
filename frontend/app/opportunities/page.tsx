@@ -455,18 +455,10 @@ export default function Opportunities() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div
-        className="text-white py-12 relative overflow-hidden bg-white"
-        style={{
-          backgroundImage: `url('/handprint.png')`,
-          backgroundPosition: 'center',
-          backgroundSize: 'auto 100%',
-          backgroundRepeat: 'repeat-x'
-        }}
-      >
-        <div className="container mx-auto px-4 relative z-10">
-          <h1 className="text-6xl font-bold mb-4 text-gray-900" style={{ textShadow: '3px 3px 6px rgba(255,255,255,0.9), -2px -2px 4px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.8)' }}>Volunteer Opportunities</h1>
-          <p className="text-2xl font-semibold text-gray-800" style={{ textShadow: '2px 2px 4px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9)' }}>Find the perfect opportunity to make a difference</p>
+      <div className="page-hero">
+        <div className="relative z-10 container mx-auto px-4">
+          <h1 className="text-3xl font-bold text-gray-900">Volunteer Opportunities</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Find the perfect opportunity to make a difference</p>
         </div>
       </div>
 

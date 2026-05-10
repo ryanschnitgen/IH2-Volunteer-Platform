@@ -43,11 +43,9 @@ export default function AdminVolunteersPage() {
   const [editingHourId, setEditingHourId] = useState<string | null>(null);
   const [editHoursValue, setEditHoursValue] = useState<number>(0);
   const [deletingHourId, setDeletingHourId] = useState<string | null>(null);
-  const [removingDuplicates, setRemovingDuplicates] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [volunteerToDelete, setVolunteerToDelete] = useState<VolunteerProfile | null>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
-  const [duplicateCount, setDuplicateCount] = useState(0);
 
   // Confirm modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -278,7 +276,6 @@ export default function AdminVolunteersPage() {
       const response = await fetch(`/api/hours?userId=${userId}`);
       const data = await response.json();
       setHoursLogs(data.hoursLogs || []);
-      setDuplicateCount(0); // No duplicates after auto-removal
     } catch (error) {
       console.error("Error loading hours logs:", error);
     }
@@ -474,10 +471,11 @@ export default function AdminVolunteersPage() {
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-md p-4">
-            <p className="text-sm text-gray-600 font-semibold">Total Hours</p>
+            <p className="text-sm text-gray-600 font-semibold">Imported Hours</p>
             <p className="text-3xl font-bold text-purple-600">
-              {volunteers.reduce((sum, v) => sum + v.lifetimeHours, 0).toLocaleString()}
+              {volunteers.reduce((sum, v) => sum + (v.lifetimeHours || 0), 0).toLocaleString()}
             </p>
+            <p className="text-xs text-gray-400 mt-1">Legacy system hours</p>
           </div>
         </div>
 
@@ -503,7 +501,7 @@ export default function AdminVolunteersPage() {
                     City
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Lifetime Hours
+                    Imported Hrs
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Account Status
@@ -638,12 +636,29 @@ export default function AdminVolunteersPage() {
                 <h3 className="font-semibold text-gray-900 mb-3">Volunteer Information</h3>
                 <div className="space-y-2 text-sm">
                   <div className={`${selectedVolunteer.lifetimeHours > 0 ? 'bg-purple-100 -mx-4 -mt-4 p-4 mb-3 rounded-t-lg' : ''}`}>
-                    <span className="font-medium text-gray-700">Lifetime Hours:</span>
+                    <span className="font-medium text-gray-700">Imported Hours:</span>
                     <span className="ml-2 text-purple-600 font-bold text-lg">{(selectedVolunteer.lifetimeHours || 0).toFixed(2)} hours</span>
                     {selectedVolunteer.lifetimeHours > 0 && (
                       <p className="text-xs text-purple-700 mt-1">✓ Imported from previous platform</p>
                     )}
                   </div>
+                  {selectedVolunteer.linkedUserId && (
+                    <>
+                      <div>
+                        <span className="font-medium text-gray-700">Platform Hours:</span>
+                        <span className="ml-2 text-blue-600 font-semibold">
+                          {hoursLogs.reduce((sum, log) => sum + log.hours, 0).toFixed(2)} hours
+                        </span>
+                        <span className="ml-1 text-xs text-gray-500">(events &amp; manual)</span>
+                      </div>
+                      <div className="border-t border-blue-200 pt-2 mt-1">
+                        <span className="font-medium text-gray-700">Total Hours:</span>
+                        <span className="ml-2 text-green-600 font-bold text-lg">
+                          {((selectedVolunteer.lifetimeHours || 0) + hoursLogs.reduce((sum, log) => sum + log.hours, 0)).toFixed(2)} hours
+                        </span>
+                      </div>
+                    </>
+                  )}
                   <div>
                     <span className="font-medium text-gray-700">Date Joined:</span>
                     <span className="ml-2 text-gray-600">{formatDate(selectedVolunteer.volunteerDateJoined)}</span>

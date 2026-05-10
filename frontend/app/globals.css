@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  /* IH2 Vibrant Color Palette */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+
+  /* IH2 Brand Colors */
   --color-primary-50: #fef3f2;
   --color-primary-100: #fee5e2;
   --color-primary-200: #fecfca;
@@ -13,7 +15,7 @@
   --color-primary-800: #9c2919;
   --color-primary-900: #81281c;
 
-  /* IH2 Neutrals */
+  /* Neutrals */
   --color-gray-50: #fafafa;
   --color-gray-100: #f5f5f5;
   --color-gray-200: #e5e5e5;
@@ -25,7 +27,7 @@
   --color-gray-800: #262626;
   --color-gray-900: #171717;
 
-  /* Accent Colors for Vibrancy */
+  /* Accent Colors */
   --color-accent-blue: #3b82f6;
   --color-accent-purple: #a855f7;
   --color-accent-green: #10b981;
@@ -33,9 +35,34 @@
   --color-accent-pink: #ec4899;
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  color: #434343;
+  color: #1a1a1a;
   background: #ffffff;
+}
+
+/* Page hero — handprint background with white overlay for readability */
+.page-hero {
+  position: relative;
+  overflow: hidden;
+  background-color: #fff;
+  background-image: url('/handprint.png');
+  background-position: center;
+  background-size: auto 100%;
+  background-repeat: repeat-x;
+  padding-top: 3.5rem;
+  padding-bottom: 3.5rem;
+}
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.88);
 }
 
 /* Print styles */
@@ -49,23 +76,19 @@ body {
     -webkit-print-color-adjust: exact;
   }
 
-  /* Hide navigation, footer, and UI elements */
   nav, footer {
     display: none !important;
   }
 
-  /* Ensure print content takes full width */
   .print\:block {
     display: block !important;
   }
 
-  /* Remove shadows and rounded corners for print */
   * {
     box-shadow: none !important;
     border-radius: 0 !important;
   }
 
-  /* Prevent page breaks inside tables */
   table {
     page-break-inside: avoid;
   }
