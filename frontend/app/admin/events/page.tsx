@@ -564,6 +564,17 @@ export default function AdminEventsPage() {
     });
   };
 
+  const copyCheckInLink = (_eventId: string) => {
+    const url = `${window.location.origin}/check-in`;
+    navigator.clipboard.writeText(url).then(() => {
+      setSuccess("Check-in link copied! This universal URL works for all events — volunteers are auto-matched by time.");
+      setTimeout(() => setSuccess(""), 5000);
+    }).catch(() => {
+      setError("Failed to copy link");
+      setTimeout(() => setError(""), 3000);
+    });
+  };
+
   // Calendar helper functions
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -1389,7 +1400,16 @@ export default function AdminEventsPage() {
                 <p className="text-gray-600 text-center py-8">No registrations for this event yet.</p>
 
                 {/* Action Buttons for empty event */}
-                <div className="mt-4 flex gap-3 justify-center">
+                <div className="mt-4 flex gap-3 justify-center flex-wrap">
+                  <button
+                    onClick={() => copyCheckInLink(selectedEventForRegistrations._id)}
+                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-semibold transition flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Copy Check-in Link
+                  </button>
                   <button
                     onClick={() => setShowAddUserForm(!showAddUserForm)}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition"
@@ -1478,7 +1498,16 @@ export default function AdminEventsPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mb-4 flex gap-3">
+                <div className="mb-4 flex gap-3 flex-wrap">
+                  <button
+                    onClick={() => copyCheckInLink(selectedEventForRegistrations._id)}
+                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-semibold transition flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Copy Check-in Link
+                  </button>
                   <button
                     onClick={() => setShowAddUserForm(!showAddUserForm)}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition"

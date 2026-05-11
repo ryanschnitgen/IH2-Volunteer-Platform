@@ -205,6 +205,11 @@ export default function VolunteerHours() {
     const month = today.getMonth();
 
     switch (preset) {
+      case 'ytd':
+        setStartDate(new Date(year, 0, 1).toISOString().split('T')[0]);
+        setEndDate(today.toISOString().split('T')[0]);
+        break;
+
       case 'last-month':
         const lastMonthStart = new Date(year, month - 1, 1);
         const lastMonthEnd = new Date(year, month, 0);
@@ -402,6 +407,7 @@ export default function VolunteerHours() {
 
           {/* Quick Date Presets */}
           <div className="mb-5 flex flex-wrap gap-2">
+            <button onClick={() => setDatePreset('ytd')} className="px-3.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs font-medium">Year to Date</button>
             <button onClick={() => setDatePreset('last-month')} className="px-3.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs font-medium">Last Month</button>
             <button onClick={() => setDatePreset('last-quarter')} className="px-3.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs font-medium">Last Quarter</button>
             <button onClick={() => setDatePreset('last-year')} className="px-3.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs font-medium">Last Year</button>

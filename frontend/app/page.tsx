@@ -202,7 +202,7 @@ export default function Home() {
                 <p className="text-sm font-semibold text-gray-800">Is your profile up to date?</p>
                 <p className="text-sm text-gray-500 mt-0.5">
                   Your contact info helps us reach you about the right opportunities.{" "}
-                  <Link href="/profile" className="text-primary-600 hover:text-primary-700 font-medium">Update now →</Link>
+                  <Link href="/profile" className="text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap">Update now →</Link>
                 </p>
               </div>
             </div>
