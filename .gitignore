@@ -35,3 +35,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude / AI tooling
+.claude/
+CLAUDE.md
+memory/
+.mcp.json
+.claude-flow/
+.swarm/
+ruvector.db
