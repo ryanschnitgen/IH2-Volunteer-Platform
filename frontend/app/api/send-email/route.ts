@@ -1,11 +1,16 @@
 import { Resend } from 'resend';
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdmin } from '@backend/lib/admin';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
-    const { to, subject, html, from } = await request.json();
+    const { to, subject, html, from, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     // Validate required fields
     if (!to || !subject || !html) {

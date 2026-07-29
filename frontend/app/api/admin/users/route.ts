@@ -3,13 +3,17 @@ import connectDB from '@backend/lib/db/mongodb';
 import User from '@backend/lib/models/User';
 import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 import EventRegistration from '@backend/lib/models/EventRegistration';
-import VolunteerHours from '@backend/lib/models/VolunteerHours';
+import HoursLog from '@backend/lib/models/HoursLog';
 import { adminAuth } from '@backend/lib/firebaseAdmin';
-import { isSuperAdmin } from '@backend/lib/admin';
+import { isAdmin as checkIsAdmin, isSuperAdmin } from '@backend/lib/admin';
 
 // Get all users
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const adminEmail = request.nextUrl.searchParams.get('adminEmail');
+    if (!checkIsAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
     await connectDB();
     const users = await User.find({}).sort({ createdAt: -1 });
     return NextResponse.json({ users });
@@ -24,7 +28,11 @@ export async function GET() {
 // Update user admin status
 export async function PATCH(request: NextRequest) {
   try {
-    const { userId, firebaseUid, isAdmin } = await request.json();
+    const { userId, firebaseUid, isAdmin, adminEmail } = await request.json();
+
+    if (!checkIsAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if ((!userId && !firebaseUid) || typeof isAdmin !== 'boolean') {
       return NextResponse.json(
@@ -145,7 +153,7 @@ export async function DELETE(request: NextRequest) {
 
     // Delete all volunteer hours
     if (firebaseUid) {
-      deletePromises.push(VolunteerHours.deleteMany({ userId: firebaseUid }));
+      deletePromises.push(HoursLog.deleteMany({ $or: [{ userId: firebaseUid }, { userEmail: email?.toLowerCase().trim() }] }));
     }
 
     await Promise.all(deletePromises);

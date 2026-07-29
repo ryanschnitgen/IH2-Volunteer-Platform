@@ -22,6 +22,7 @@ export interface IEventRegistration {
   totalAttendees: number;
   // Group check-in type (true = checking in for guests without accounts)
   isGroupCheckIn: boolean;
+  reminderSentAt?: Date;
 }
 
 const EventRegistrationSchema = new mongoose.Schema<IEventRegistration>(
@@ -102,6 +103,9 @@ const EventRegistrationSchema = new mongoose.Schema<IEventRegistration>(
     isGroupCheckIn: {
       type: Boolean,
       default: false,
+    },
+    reminderSentAt: {
+      type: Date,
     },
   },
   {

@@ -237,21 +237,21 @@ export default function MySchedule() {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`Inspired Hearts and Hands ${location}`)}`;
   };
 
-  const formatDateForICS = (dateString: string, time: string) => {
-    const date = new Date(dateString);
-    const [timeStr, period] = time.split(" ");
-    const [hours, minutes] = timeStr.split(":");
-    let hour = parseInt(hours);
-    if (period === "PM" && hour !== 12) hour += 12;
-    if (period === "AM" && hour === 12) hour = 0;
-
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hourStr = String(hour).padStart(2, "0");
-    const minuteStr = String(minutes).padStart(2, "0");
-
-    return `${year}${month}${day}T${hourStr}${minuteStr}00`;
+  const formatDateForICS = (dateStr: string, time: string): string => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    let hour: number, minute: number;
+    if (time.includes(' ')) {
+      const [timeStr, period] = time.split(' ');
+      const [h, m] = timeStr.split(':').map(Number);
+      hour = period === 'PM' && h !== 12 ? h + 12 : period === 'AM' && h === 12 ? 0 : h;
+      minute = m;
+    } else {
+      const [h, m] = time.split(':').map(Number);
+      hour = h;
+      minute = m;
+    }
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${year}${pad(month)}${pad(day)}T${pad(hour)}${pad(minute)}00`;
   };
 
   const addToCalendar = (registration: ScheduledEvent) => {
@@ -303,12 +303,12 @@ END:VCALENDAR`;
 
   const upcomingRegistrations = registrations.filter((reg) => {
     const eventDate = new Date(reg.eventDate);
-    return eventDate >= now;
+    return eventDate >= now && !reg.cancelled;
   }).sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
 
   const pastRegistrations = registrations.filter((reg) => {
     const eventDate = new Date(reg.eventDate);
-    return eventDate < now;
+    return eventDate < now && !reg.cancelled;
   }).sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 
   const displayedRegistrations = showPastEvents ? pastRegistrations : upcomingRegistrations;
@@ -680,6 +680,7 @@ END:VCALENDAR`;
                   <input
                     type="number"
                     min="0"
+                    max={20}
                     value={additionalAttendees}
                     onChange={(e) => handleAdditionalAttendeesChange(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"

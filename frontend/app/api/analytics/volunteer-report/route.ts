@@ -3,6 +3,7 @@ import dbConnect from '@backend/lib/db/mongodb';
 import HoursLog from '@backend/lib/models/HoursLog';
 import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 import EventRegistration from '@backend/lib/models/EventRegistration';
+import { isAdmin } from '@backend/lib/admin';
 
 // 93% of guests are assumed to be unique volunteers
 const GUEST_UNIQUENESS_RATE = 0.93;
@@ -21,6 +22,11 @@ export async function GET(request: NextRequest) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
+    const adminEmail = searchParams.get('adminEmail');
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const format = searchParams.get('format');
@@ -122,7 +128,7 @@ export async function GET(request: NextRequest) {
     // 2. HoursLog - for manual logs, clock-in/out, and auto-assigned copies from events
     // To avoid double-counting, only count HoursLog entries that are NOT auto-assigned from events
     const hoursFromLogs = allHoursLogs
-      .filter(log => !log.autoAssigned) // Exclude auto-assigned to avoid double-counting with event registrations
+      .filter(log => !log.autoAssigned && !log.pendingApproval) // Exclude auto-assigned (double-counts with event regs) and pending (not yet approved)
       .reduce((sum, log) => {
         return sum + (log.hours || 0);
       }, 0);
@@ -154,8 +160,8 @@ export async function GET(request: NextRequest) {
 
       const monthData = monthlyData.get(monthKey)!;
       monthData.sessions += 1;
-      // Only count hours from non-auto-assigned logs to avoid double-counting with event registrations
-      if (!log.autoAssigned) {
+      // Only count approved manual hours to avoid double-counting with event registrations or inflating with pending
+      if (!log.autoAssigned && !log.pendingApproval) {
         monthData.hours += log.hours || 0;
       }
     });

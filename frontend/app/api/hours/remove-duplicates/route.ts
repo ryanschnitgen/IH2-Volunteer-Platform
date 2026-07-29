@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import HoursLog from '@backend/lib/models/HoursLog';
+import { isAdmin } from '@backend/lib/admin';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await request.json();
+    const { userId, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!userId) {
       return NextResponse.json(
@@ -38,9 +43,16 @@ export async function POST(request: NextRequest) {
       }
 
       if (seen.has(key)) {
-        // This is a duplicate - mark for deletion
-        duplicates.push(log._id.toString());
-        console.log(`  → Found duplicate: ${log.eventTitle || log.notes || 'Manual entry'} on ${dateStr}`);
+        const existing = seen.get(key);
+        // Always prefer the approved entry over the pending one
+        if (existing.pendingApproval && !log.pendingApproval) {
+          duplicates.push(existing._id.toString());
+          seen.set(key, log);
+          console.log(`  → Replaced pending with approved: ${log.eventTitle || log.notes || 'Manual entry'} on ${dateStr}`);
+        } else {
+          duplicates.push(log._id.toString());
+          console.log(`  → Found duplicate: ${log.eventTitle || log.notes || 'Manual entry'} on ${dateStr}`);
+        }
       } else {
         // First occurrence - keep it
         seen.set(key, log);
@@ -104,13 +116,14 @@ export async function GET(request: NextRequest) {
       }
 
       if (seen.has(key)) {
-        duplicates.push({
-          _id: log._id,
-          eventTitle: log.eventTitle,
-          date: log.date,
-          hours: log.hours,
-          notes: log.notes,
-        });
+        const existing = seen.get(key);
+        if (existing.pendingApproval && !log.pendingApproval) {
+          // Report the pending entry as the duplicate (the approved one should be kept)
+          duplicates.push({ _id: existing._id, eventTitle: existing.eventTitle, date: existing.date, hours: existing.hours, notes: existing.notes });
+          seen.set(key, log);
+        } else {
+          duplicates.push({ _id: log._id, eventTitle: log.eventTitle, date: log.date, hours: log.hours, notes: log.notes });
+        }
       } else {
         seen.set(key, log);
       }

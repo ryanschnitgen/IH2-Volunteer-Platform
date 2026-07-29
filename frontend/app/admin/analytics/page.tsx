@@ -42,6 +42,8 @@ export default function AdminAnalytics() {
   const [dateRangeType, setDateRangeType] = useState<DateRange>('ytd');
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+  const [appliedStartDate, setAppliedStartDate] = useState("");
+  const [appliedEndDate, setAppliedEndDate] = useState("");
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin(user.email))) {
@@ -53,7 +55,7 @@ export default function AdminAnalytics() {
     if (user && isAdmin(user.email)) {
       loadAnalytics();
     }
-  }, [user, dateRangeType, customStartDate, customEndDate]);
+  }, [user, dateRangeType, appliedStartDate, appliedEndDate]);
 
   const getDateRange = () => {
     const today = new Date();
@@ -69,9 +71,9 @@ export default function AdminAnalytics() {
         startDate = new Date(today.getFullYear(), 0, 1); // January 1st of current year
         break;
       case 'custom':
-        if (!customStartDate || !customEndDate) return null;
-        startDate = new Date(customStartDate);
-        endDate = new Date(customEndDate);
+        if (!appliedStartDate || !appliedEndDate) return null;
+        startDate = new Date(appliedStartDate);
+        endDate = new Date(appliedEndDate);
         break;
       default:
         return null;
@@ -94,6 +96,7 @@ export default function AdminAnalytics() {
       const params = new URLSearchParams({
         startDate: dateRange.start,
         endDate: dateRange.end,
+        adminEmail: user?.email || '',
       });
 
       const response = await fetch(`/api/analytics/volunteer-report?${params}`);
@@ -123,6 +126,7 @@ export default function AdminAnalytics() {
         endDate: dateRange.end,
         format: 'csv',
       });
+      params.append('adminEmail', user?.email || '');
 
       const response = await fetch(`/api/analytics/volunteer-report?${params}`);
 
@@ -229,6 +233,7 @@ export default function AdminAnalytics() {
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
+                  onBlur={(e) => setAppliedStartDate(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -240,6 +245,7 @@ export default function AdminAnalytics() {
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
+                  onBlur={(e) => setAppliedEndDate(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -308,7 +314,9 @@ export default function AdminAnalytics() {
                   {analytics.guestVolunteers.toLocaleString()}
                 </div>
                 <div className="text-xs opacity-80">
-                  Without registered accounts (93% of {analytics.totalGuests} guests)
+                  Without registered accounts ({analytics.totalGuests > 0
+                    ? Math.round(((analytics.totalGuests - (analytics.guestVolunteers || 0)) / analytics.totalGuests) * 100)
+                    : 0}% of {analytics.totalGuests} guests)
                 </div>
               </div>
 
@@ -342,7 +350,7 @@ export default function AdminAnalytics() {
                     {analytics.totalHours.toLocaleString()} hours
                   </div>
                   <div className="text-sm opacity-80 mt-2">
-                    {(analytics.totalHours / analytics.totalUniqueVolunteers).toFixed(1)} hours per volunteer average
+                    {(analytics.totalHours / (analytics.totalUniqueVolunteers || 1)).toFixed(1)} hours per volunteer average
                   </div>
                 </div>
                 <svg className="w-20 h-20 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,7 +392,7 @@ export default function AdminAnalytics() {
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                       <span className="text-gray-700">Average Sessions/Volunteer:</span>
                       <span className="font-bold text-gray-900">
-                        {(analytics.totalSessions / analytics.signedInVolunteers).toFixed(1)}
+                        {(analytics.totalSessions / (analytics.signedInVolunteers || 1)).toFixed(1)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded">

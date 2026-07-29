@@ -2,22 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 import HoursLog from '@backend/lib/models/HoursLog';
+import { isAdmin } from '@backend/lib/admin';
 
 export async function GET(request: NextRequest) {
   try {
+    const adminEmail = request.nextUrl.searchParams.get('adminEmail');
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     await connectDB();
 
     // Fetch all volunteer profiles and hours logs
     const [profiles, allHoursLogs] = await Promise.all([
       VolunteerProfile.find({}).lean(),
-      HoursLog.find({}).lean(),
+      HoursLog.find({ pendingApproval: { $ne: true } }).lean(),
     ]);
 
     // Calculate total hours for each volunteer
     const hoursMap = new Map<string, number>();
 
     for (const log of allHoursLogs) {
-      const email = log.userEmail;
+      const email = log.userEmail?.toLowerCase().trim() || '';
       const currentHours = hoursMap.get(email) || 0;
       hoursMap.set(email, currentHours + log.hours);
     }
@@ -43,7 +49,7 @@ export async function GET(request: NextRequest) {
     let csvContent = headers.join(',') + '\n';
 
     for (const profile of profiles) {
-      const totalHours = hoursMap.get(profile.email) || 0;
+      const totalHours = hoursMap.get(profile.email?.toLowerCase().trim() || '') || 0;
       const lifetimeHours = profile.lifetimeHours || 0;
 
       // Helper function to escape CSV fields

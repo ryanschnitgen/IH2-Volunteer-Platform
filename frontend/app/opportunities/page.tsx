@@ -34,6 +34,9 @@ interface Registration {
   attendeeNames: string[];
   totalAttendees: number;
   cancelled: boolean;
+  checkedIn: boolean;
+  attended: boolean;
+  isGroupCheckIn: boolean;
 }
 
 export default function Opportunities() {
@@ -254,7 +257,7 @@ export default function Opportunities() {
   };
 
   const getRegistration = (eventId: string) => {
-    return registrations.find((r) => r.eventId === eventId);
+    return registrations.find((r) => r.eventId === eventId && !r.cancelled);
   };
 
   const openEditModal = (registration: Registration, opportunity: Opportunity) => {
@@ -262,6 +265,7 @@ export default function Opportunities() {
     setSelectedEvent(opportunity);
     setShowEditModal(true);
     setIsGroupRegistration(registration.totalAttendees > 1);
+    setIsGroupCheckIn(registration.isGroupCheckIn || false);
     setAdditionalAttendees(registration.additionalAttendees || 0);
     setAttendeeNames(registration.attendeeNames || []);
     setError(""); // Clear any previous errors
@@ -296,7 +300,8 @@ export default function Opportunities() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           additionalAttendees: isGroupRegistration ? additionalAttendees : 0,
-          attendeeNames: isGroupRegistration ? attendeeNames : [],
+          attendeeNames: isGroupRegistration && !isGroupCheckIn ? attendeeNames : [],
+          isGroupCheckIn: isGroupRegistration ? isGroupCheckIn : false,
         }),
       });
 
@@ -650,9 +655,7 @@ export default function Opportunities() {
                         {dayNumber}
                       </div>
                       {dayOpportunities.map((opp) => {
-                        const registration = registrations.find(
-                          (r) => r.eventId === opp._id
-                        );
+                        const registration = getRegistration(opp._id);
                         const isRegistered = !!registration;
 
                         return (

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 export interface IVolunteerProfile {
   firstName: string;
-  lastName: string;
+  lastName?: string;
   email: string;
   username?: string; // Legacy system username
   phone?: string;
@@ -31,7 +31,8 @@ const VolunteerProfileSchema = new mongoose.Schema<IVolunteerProfile>(
     },
     lastName: {
       type: String,
-      required: true,
+      required: false,
+      default: '',
     },
     email: {
       type: String,

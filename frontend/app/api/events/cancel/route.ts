@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import Event from '@backend/lib/models/Event';
 import EventRegistration from '@backend/lib/models/EventRegistration';
+import { isAdmin } from '@backend/lib/admin';
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, reason, sendEmail } = await request.json();
+    const { eventId, reason, sendEmail, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!eventId) {
       return NextResponse.json(
@@ -25,8 +30,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update event status to cancelled
+    // Update event status to cancelled and restore all spots
     event.status = 'cancelled';
+    event.spotsRemaining = event.spotsAvailable;
     await event.save();
 
     // Get all registrations for this event

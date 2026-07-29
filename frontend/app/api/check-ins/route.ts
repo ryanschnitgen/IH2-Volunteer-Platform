@@ -3,6 +3,8 @@ import connectDB from '@backend/lib/db/mongodb';
 import CheckIn from '@backend/lib/models/CheckIn';
 import EventRegistration from '@backend/lib/models/EventRegistration';
 import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
+import Event from '@backend/lib/models/Event';
+import { isAdmin } from '@backend/lib/admin';
 
 // Levenshtein distance for fuzzy string matching
 function levenshteinDistance(str1: string, str2: string): number {
@@ -124,7 +126,11 @@ async function findBestMatch(eventId: string, name: string, email: string) {
 // POST - Import check-ins from Google Form
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, checkIns } = await request.json();
+    const { eventId, checkIns, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!eventId || !checkIns || !Array.isArray(checkIns)) {
       return NextResponse.json(
@@ -192,7 +198,7 @@ export async function POST(request: NextRequest) {
           } else if (match.profile) {
             // Create new registration from profile
             const profile = match.profile;
-            const event = await require('@backend/lib/models/Event').default.findById(eventId);
+            const event = await Event.findById(eventId);
 
             if (event) {
               const newRegistration = await EventRegistration.create({
@@ -204,7 +210,7 @@ export async function POST(request: NextRequest) {
                 eventDate: event.date,
                 eventStartTime: event.startTime,
                 eventEndTime: event.endTime,
-                eventCategory: event.category || 'General',
+                eventCategory: event.eventCategory || 'General',
                 checkedIn: true,
                 attended: false,
               });
@@ -292,7 +298,11 @@ export async function GET(request: NextRequest) {
 // PATCH - Manually match or update check-in
 export async function PATCH(request: NextRequest) {
   try {
-    const { checkInId, matchedRegistrationId, matchedUserId, notes } = await request.json();
+    const { checkInId, matchedRegistrationId, matchedUserId, notes, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!checkInId) {
       return NextResponse.json(
@@ -345,6 +355,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const checkInId = searchParams.get('id');
+    const adminEmail = searchParams.get('adminEmail');
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!checkInId) {
       return NextResponse.json(

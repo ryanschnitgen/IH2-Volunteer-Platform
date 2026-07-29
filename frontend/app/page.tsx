@@ -21,17 +21,18 @@ export default function Home() {
 
   useEffect(() => {
     if (user) {
-      loadYearlyHours();
-      loadCommunityHours();
+      setLoadingHours(true);
+      Promise.all([loadYearlyHours(), loadCommunityHours()]).finally(() => setLoadingHours(false));
     }
   }, [user]);
 
   const loadCommunityHours = async () => {
+    if (!user) return;
     try {
       const currentYear = new Date().getFullYear();
       const [hoursRes, registrationsRes] = await Promise.all([
-        fetch('/api/hours/all'),
-        fetch('/api/events/registrations/all')
+        fetch(`/api/hours/all?userId=${user.uid}`),
+        fetch(`/api/events/registrations/all?userId=${user.uid}`)
       ]);
       const hoursData = await hoursRes.json();
       const registrationsData = await registrationsRes.json();
@@ -45,7 +46,7 @@ export default function Home() {
           .reduce((sum: number, reg: any) => sum + reg.hoursCompleted, 0);
 
         const manualHours = (hoursData.hoursLogs || [])
-          .filter((log: any) => new Date(log.date).getFullYear() === currentYear && !log.autoAssigned)
+          .filter((log: any) => new Date(log.date).getFullYear() === currentYear && !log.autoAssigned && !log.pendingApproval)
           .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
 
         setCommunityHours(eventHours + manualHours);
@@ -58,7 +59,6 @@ export default function Home() {
   const loadYearlyHours = async () => {
     if (!user) return;
     try {
-      setLoadingHours(true);
       const [registrationsRes, hoursLogsRes] = await Promise.all([
         fetch(`/api/events/registrations?userId=${user.uid}`),
         fetch(`/api/hours?userId=${user.uid}`)
@@ -70,24 +70,24 @@ export default function Home() {
       const currentMonth = new Date().getMonth();
 
       const eventHours = (registrationsData.registrations || [])
-        .filter((reg: any) => new Date(reg.eventDate).getFullYear() === currentYear && (reg.attended || reg.checkedIn))
+        .filter((reg: any) => new Date(reg.eventDate).getFullYear() === currentYear && (reg.attended || reg.checkedIn) && !reg.cancelled)
         .reduce((sum: number, reg: any) => sum + (reg.hoursCompleted || 0), 0);
 
       const manualHours = (hoursLogsData.hoursLogs || [])
-        .filter((log: any) => new Date(log.date).getFullYear() === currentYear && !log.autoAssigned)
+        .filter((log: any) => new Date(log.date).getFullYear() === currentYear && !log.autoAssigned && !log.pendingApproval)
         .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
 
       const monthEventHours = (registrationsData.registrations || [])
         .filter((reg: any) => {
           const d = new Date(reg.eventDate);
-          return d.getFullYear() === currentYear && d.getMonth() === currentMonth && (reg.attended || reg.checkedIn);
+          return d.getFullYear() === currentYear && d.getMonth() === currentMonth && (reg.attended || reg.checkedIn) && !reg.cancelled;
         })
         .reduce((sum: number, reg: any) => sum + (reg.hoursCompleted || 0), 0);
 
       const monthManualHours = (hoursLogsData.hoursLogs || [])
         .filter((log: any) => {
           const d = new Date(log.date);
-          return d.getFullYear() === currentYear && d.getMonth() === currentMonth && !log.autoAssigned;
+          return d.getFullYear() === currentYear && d.getMonth() === currentMonth && !log.autoAssigned && !log.pendingApproval;
         })
         .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
 
@@ -95,8 +95,6 @@ export default function Home() {
       setMonthlyHours(monthEventHours + monthManualHours);
     } catch (err) {
       console.error("Error loading yearly hours:", err);
-    } finally {
-      setLoadingHours(false);
     }
   };
 

@@ -28,6 +28,9 @@ interface HoursLog {
   hours: number;
   date: string;
   autoAssigned: boolean;
+  pendingApproval?: boolean;
+  eventTitle?: string;
+  eventId?: string;
   notes?: string;
 }
 
@@ -41,6 +44,7 @@ export default function VolunteerHours() {
   const [volunteerEvents, setVolunteerEvents] = useState<VolunteerEvent[]>([]);
   const [volunteerProfile, setVolunteerProfile] = useState<VolunteerProfile | null>(null);
   const [manualHoursLogs, setManualHoursLogs] = useState<HoursLog[]>([]);
+  const [pendingHoursLogs, setPendingHoursLogs] = useState<HoursLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,7 +78,7 @@ export default function VolunteerHours() {
 
       if (registrationsRes.ok) {
         // Filter for attended or checked-in events
-        const attendedEvents = registrationsData.registrations.filter((reg: any) => reg.attended || reg.checkedIn);
+        const attendedEvents = registrationsData.registrations.filter((reg: any) => (reg.attended || reg.checkedIn) && !reg.cancelled);
 
         // Fetch event details to get descriptions
         const eventsRes = await fetch('/api/events');
@@ -102,9 +106,12 @@ export default function VolunteerHours() {
       }
 
       if (hoursLogsRes.ok) {
-        // Filter only manually logged hours (not auto-assigned from events)
-        const manualLogs = hoursLogsData.hoursLogs?.filter((log: HoursLog) => !log.autoAssigned) || [];
+        // Approved manual/clock-in hours (not auto-assigned, not pending)
+        const manualLogs = hoursLogsData.hoursLogs?.filter((log: HoursLog) => !log.autoAssigned && !log.pendingApproval) || [];
         setManualHoursLogs(manualLogs);
+        // Pending check-in hours awaiting admin approval — excluded from totals but shown separately
+        const pendingLogs = hoursLogsData.hoursLogs?.filter((log: HoursLog) => log.pendingApproval) || [];
+        setPendingHoursLogs(pendingLogs);
       }
     } catch (err) {
       console.error("Error loading volunteer hours:", err);
@@ -344,7 +351,7 @@ export default function VolunteerHours() {
             </p>
             <div className="text-gray-600 text-sm">
               <p><strong>Organization:</strong> Inspired Hearts and Hands</p>
-              <p><strong>Phone:</strong> 412-897-4034</p>
+              <p><strong>Phone:</strong> 724-230-6378</p>
               <p><strong>Email:</strong> info@inspiredheartsandhands.com</p>
             </div>
           </div>
@@ -446,6 +453,24 @@ export default function VolunteerHours() {
         </div>
 
         {/* Hours Summary Cards - Only visible on screen, not in print */}
+        {pendingHoursLogs.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 print:hidden">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-amber-800">
+                  {pendingHoursLogs.reduce((s, l) => s + l.hours, 0).toFixed(1)} hrs pending admin approval
+                </p>
+                <p className="text-xs text-amber-600 mt-0.5">
+                  These hours from your recent check-in(s) will appear in your totals once approved.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-4 mb-8 print:hidden">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
@@ -505,7 +530,7 @@ export default function VolunteerHours() {
         {/* Volunteer History */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 print:hidden">
           <h2 className="text-base font-semibold text-gray-900 mb-5">Volunteer History</h2>
-          {sortedEvents.length === 0 && manualHoursLogs.length === 0 ? (
+          {sortedEvents.length === 0 && manualHoursLogs.length === 0 && pendingHoursLogs.length === 0 ? (
             <p className="text-gray-400 text-center py-10 text-sm">
               No history yet — sign up for events to get started.
             </p>
@@ -528,13 +553,25 @@ export default function VolunteerHours() {
                   category: 'Manual',
                   hours: l.hours,
                 })),
+                ...pendingHoursLogs.map(l => ({
+                  key: l._id,
+                  type: 'pending' as const,
+                  date: l.date,
+                  title: l.eventTitle || l.notes || 'Event Check-in',
+                  category: 'Pending Approval',
+                  hours: l.hours,
+                })),
               ]
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .map((item) => (
                   <div
                     key={item.key}
                     className={`border rounded-2xl p-4 transition-all ${
-                      item.type === 'event' ? 'border-gray-100 bg-white hover:border-gray-200' : 'border-gray-100 bg-gray-50/50'
+                      item.type === 'event'
+                        ? 'border-gray-100 bg-white hover:border-gray-200'
+                        : item.type === 'pending'
+                        ? 'border-amber-200 bg-amber-50/50'
+                        : 'border-gray-100 bg-gray-50/50'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-4">
@@ -544,6 +581,8 @@ export default function VolunteerHours() {
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
                             item.type === 'event'
                               ? 'bg-primary-100 text-primary-700'
+                              : item.type === 'pending'
+                              ? 'bg-amber-100 text-amber-700'
                               : 'bg-gray-200 text-gray-700'
                           }`}>
                             {item.category}
@@ -552,7 +591,11 @@ export default function VolunteerHours() {
                         <div className="text-sm text-gray-500">{formatDate(item.date)}</div>
                       </div>
                       <div className={`text-xl font-bold whitespace-nowrap ${
-                        item.type === 'event' ? 'text-primary-600' : 'text-gray-600'
+                        item.type === 'event'
+                          ? 'text-primary-600'
+                          : item.type === 'pending'
+                          ? 'text-amber-600'
+                          : 'text-gray-600'
                       }`}>
                         {item.hours.toFixed(2)} hrs
                       </div>

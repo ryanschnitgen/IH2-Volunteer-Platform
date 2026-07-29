@@ -34,11 +34,12 @@ export default function AdminDashboard() {
 
       // Fetch users, events, registrations, and hours logs in parallel with cache busting
       const timestamp = Date.now();
+      const adminEmail = encodeURIComponent(user?.email || '');
       const [usersRes, eventsRes, allRegistrationsRes, allHoursRes] = await Promise.all([
-        fetch(`/api/admin/users?t=${timestamp}`, { cache: 'no-store' }),
+        fetch(`/api/admin/users?adminEmail=${adminEmail}&t=${timestamp}`, { cache: 'no-store' }),
         fetch(`/api/events?t=${timestamp}`, { cache: 'no-store' }),
-        fetch(`/api/events/registrations/all?t=${timestamp}`, { cache: 'no-store' }),
-        fetch(`/api/hours/all?t=${timestamp}`, { cache: 'no-store' }),
+        fetch(`/api/events/registrations/all?userId=${user?.uid || ''}&t=${timestamp}`, { cache: 'no-store' }),
+        fetch(`/api/hours/all?userId=${user?.uid || ''}&t=${timestamp}`, { cache: 'no-store' }),
       ]);
 
       const usersData = await usersRes.json();
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
 
       const activeEvents = eventsData.events?.filter((event: any) => {
         const eventDate = new Date(event.date);
-        return eventDate >= now || event.status === "active";
+        return eventDate >= now && event.status === "active";
       }).length || 0;
 
       // Calculate current year volunteer hours from:
@@ -73,11 +74,11 @@ export default function AdminDashboard() {
           return sum + reg.hoursCompleted;
         }, 0);
 
-      // Add manual and clock-in/out hours (not auto-assigned from events)
+      // Add manual and clock-in/out hours (not auto-assigned from events, not pending)
       const manualHours = (allHoursData.hoursLogs || [])
         .filter((log: any) => {
           const logDate = new Date(log.date);
-          return logDate.getFullYear() === currentYear && !log.autoAssigned;
+          return logDate.getFullYear() === currentYear && !log.autoAssigned && !log.pendingApproval;
         })
         .reduce((sum: number, log: any) => sum + log.hours, 0);
 

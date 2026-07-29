@@ -137,7 +137,7 @@ export default function AdminEventsPage() {
 
     try {
       // Add cache busting to ensure fresh data
-      const response = await fetch(`/api/events/registrations/all?t=${Date.now()}`, {
+      const response = await fetch(`/api/events/registrations/all?userId=${user?.uid || ''}&t=${Date.now()}`, {
         cache: 'no-store',
       });
       const data = await response.json();
@@ -163,6 +163,7 @@ export default function AdminEventsPage() {
         body: JSON.stringify({
           registrationId,
           attended: !currentStatus,
+          adminEmail: user?.email,
         }),
       });
 
@@ -225,6 +226,7 @@ export default function AdminEventsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventId: selectedEventForRegistrations._id,
+          adminEmail: user?.email,
         }),
       });
 
@@ -285,11 +287,12 @@ export default function AdminEventsPage() {
       const url = editingEvent ? "/api/events" : "/api/events";
       const method = editingEvent ? "PATCH" : "POST";
       const body = editingEvent
-        ? { eventId: editingEvent._id, ...formData }
+        ? { eventId: editingEvent._id, ...formData, adminEmail: user?.email }
         : {
             ...formData,
             createdBy: user.uid,
             createdByName: user.displayName || user.email,
+            adminEmail: user?.email,
           };
 
       console.log('Request body:', JSON.stringify(body, null, 2));
@@ -361,7 +364,7 @@ export default function AdminEventsPage() {
 
     try {
       // Check if there are registrations
-      const regResponse = await fetch("/api/events/registrations/all");
+      const regResponse = await fetch(`/api/events/registrations/all?userId=${user?.uid || ''}`);
       const regData = await regResponse.json();
       const registrations = regData.registrations?.filter((r: any) => r.eventId === eventToDelete._id) || [];
 
@@ -373,10 +376,11 @@ export default function AdminEventsPage() {
           name: r.userName
         }));
 
-        await fetch("/api/send-email", {
+        const emailRes = await fetch("/api/send-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            adminEmail: user?.email,
             to: recipients.map((r: any) => r.email),
             subject: `Event Cancelled: ${eventToDelete.title}`,
             html: `
@@ -400,10 +404,13 @@ export default function AdminEventsPage() {
           }),
         });
         setSendingNotification(false);
+        if (!emailRes.ok) {
+          console.warn('Cancellation email failed to send — event will still be deleted');
+        }
       }
 
       // Delete the event
-      const response = await fetch(`/api/events?id=${eventToDelete._id}`, {
+      const response = await fetch(`/api/events?id=${eventToDelete._id}&adminEmail=${encodeURIComponent(user?.email || '')}`, {
         method: "DELETE",
       });
 
@@ -444,6 +451,7 @@ export default function AdminEventsPage() {
         body: JSON.stringify({
           eventId: event._id,
           status: newStatus,
+          adminEmail: user?.email,
         }),
       });
 
@@ -476,6 +484,7 @@ export default function AdminEventsPage() {
           eventId: eventToCancel._id,
           reason: cancellationReason,
           sendEmail: sendCancellationEmail,
+          adminEmail: user?.email,
         }),
       });
 
@@ -491,6 +500,7 @@ export default function AdminEventsPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            adminEmail: user?.email,
             to: data.recipients.map((r: any) => r.email),
             subject: `Event Cancelled: ${eventToCancel.title}`,
             html: `
@@ -615,7 +625,8 @@ export default function AdminEventsPage() {
         body: JSON.stringify({
           eventId: selectedEventForRegistrations._id,
           userEmail: addUserEmail.trim(),
-          retroactive: true, // Flag to indicate this is retroactive registration
+          retroactive: true,
+          adminEmail: user?.email,
         }),
       });
 
@@ -662,7 +673,10 @@ export default function AdminEventsPage() {
           <p className="text-gray-600">Create and manage volunteer events</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) setEditingEvent(null);
+            setShowForm(!showForm);
+          }}
           className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition"
         >
           {showForm ? "Cancel" : "+ Create Event"}
@@ -1382,6 +1396,7 @@ export default function AdminEventsPage() {
                   setShowRegistrationsModal(false);
                   setSelectedEventForRegistrations(null);
                   setRegistrations([]);
+                  setShowAddUserForm(false);
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >

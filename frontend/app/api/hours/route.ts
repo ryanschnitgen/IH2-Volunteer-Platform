@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import HoursLog from '@backend/lib/models/HoursLog';
+import { isAdmin } from '@backend/lib/admin';
 
 // Create a new manual hours log entry
 export async function POST(request: NextRequest) {
@@ -39,7 +40,23 @@ export async function POST(request: NextRequest) {
     if (existingAutoHours) {
       return NextResponse.json(
         {
-          error: `Auto-assigned hours already exist for ${new Date(date).toLocaleDateString()} (${existingAutoHours.eventTitle || 'Event'}). Cannot manually log hours for this date.`,
+          error: `Event hours already exist for ${new Date(date).toLocaleDateString()} (${existingAutoHours.eventTitle || 'Event'}). Cannot manually log hours for this date.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Also block if a pending check-in entry exists for this date — wait for admin approval first
+    const existingPending = await HoursLog.findOne({
+      userId,
+      date: { $gte: startOfDay, $lte: endOfDay },
+      pendingApproval: true,
+    });
+
+    if (existingPending) {
+      return NextResponse.json(
+        {
+          error: `A pending check-in exists for ${new Date(date).toLocaleDateString()} (${existingPending.eventTitle || 'Event'}). Wait for admin approval before manually logging hours.`,
         },
         { status: 400 }
       );
@@ -97,7 +114,11 @@ export async function GET(request: NextRequest) {
 // Update hours log entry
 export async function PATCH(request: NextRequest) {
   try {
-    const { hoursLogId, hours, notes } = await request.json();
+    const { hoursLogId, hours, notes, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!hoursLogId) {
       return NextResponse.json(
@@ -147,6 +168,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const hoursLogId = searchParams.get('id');
+    const adminEmail = searchParams.get('adminEmail');
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!hoursLogId) {
       return NextResponse.json(

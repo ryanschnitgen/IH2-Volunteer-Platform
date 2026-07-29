@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     await dbConnect();
 
-    const { userId, email } = await request.json();
+    const { userId, email, displayName } = await request.json();
 
     if (!userId || !email) {
       return NextResponse.json(
@@ -15,24 +15,44 @@ export async function POST(request: Request) {
       );
     }
 
-    // Find and update the volunteer profile with waiver acceptance
-    const profile = await VolunteerProfile.findOneAndUpdate(
+    const normalizedEmail = email.toLowerCase().trim();
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const waiverFields = {
+      waiverAccepted: true,
+      waiverAcceptedDate: new Date(),
+      waiverAcceptedIP: ip,
+      linkedUserId: userId,
+      lastUpdated: new Date(),
+    };
+
+    // Try to find profile by linkedUserId first (email signup or previously linked)
+    let profile = await VolunteerProfile.findOneAndUpdate(
       { linkedUserId: userId },
-      {
-        $set: {
-          waiverAccepted: true,
-          waiverAcceptedDate: new Date(),
-          waiverAcceptedIP: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-        },
-      },
-      { new: true, upsert: false }
+      { $set: waiverFields },
+      { new: true }
     );
 
+    // Fallback: find by email (covers Google users whose profile was linked on login)
     if (!profile) {
-      return NextResponse.json(
-        { error: "Volunteer profile not found" },
-        { status: 404 }
+      profile = await VolunteerProfile.findOneAndUpdate(
+        { email: normalizedEmail },
+        { $set: waiverFields },
+        { new: true }
       );
+    }
+
+    // Still not found: Google signup with no existing profile — create one
+    if (!profile) {
+      const nameParts = (displayName || '').trim().split(' ');
+      const firstName = nameParts[0] || normalizedEmail.split('@')[0];
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      profile = await VolunteerProfile.create({
+        firstName,
+        lastName,
+        email: normalizedEmail,
+        ...waiverFields,
+      });
     }
 
     return NextResponse.json({

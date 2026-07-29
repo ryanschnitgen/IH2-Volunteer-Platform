@@ -102,7 +102,7 @@ function AdminEmailPanel() {
         }
       } else if (filterType === "current") {
         // Get only current platform users (registered accounts)
-        const response = await fetch("/api/admin/users");
+        const response = await fetch(`/api/admin/users?adminEmail=${encodeURIComponent(user?.email || '')}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -115,7 +115,7 @@ function AdminEmailPanel() {
         }
       } else if (filterType === "event" && selectedEventId) {
         // Get users registered for specific event
-        const response = await fetch("/api/events/registrations/all");
+        const response = await fetch(`/api/events/registrations/all?adminEmail=${encodeURIComponent(user?.email || '')}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -123,7 +123,7 @@ function AdminEmailPanel() {
           const seenEmails = new Set<string>();
 
           data.registrations
-            .filter((reg: any) => reg.eventId === selectedEventId)
+            .filter((reg: any) => reg.eventId === selectedEventId && !reg.cancelled)
             .forEach((reg: any) => {
               if (!seenEmails.has(reg.userEmail)) {
                 seenEmails.add(reg.userEmail);
@@ -186,6 +186,7 @@ function AdminEmailPanel() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          adminEmail: user?.email,
           to: selectedRecipients.map(r => r.email),
           subject,
           html: `

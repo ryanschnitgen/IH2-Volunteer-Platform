@@ -109,27 +109,28 @@ async function checkInToEvent(
   normalizedEmail: string,
   name: string,
   totalAttendees: number,
-  hasGuests: boolean,
-  guestCount: number,
   timestamp: string
 ) {
+  const effectiveUserId = volunteer.linkedUserId || `walkin-${volunteer._id.toString()}`;
+
+  const checkInOrConditions: any[] = [{ userEmail: normalizedEmail }];
+  if (volunteer.linkedUserId) {
+    checkInOrConditions.push({ userId: volunteer.linkedUserId });
+  }
   let registration = await EventRegistration.findOne({
     eventId: event._id,
-    $or: [
-      { userEmail: normalizedEmail },
-      { userId: volunteer.linkedUserId }
-    ],
+    $or: checkInOrConditions,
     cancelled: { $ne: true }
   });
 
   if (registration) {
     registration.checkedIn = true;
-    registration.groupSize = totalAttendees;
+    registration.totalAttendees = totalAttendees;
     await registration.save();
   } else {
     registration = await EventRegistration.create({
       eventId: event._id,
-      userId: volunteer.linkedUserId || '',
+      userId: effectiveUserId,
       userEmail: normalizedEmail,
       userName: name,
       eventTitle: event.title,
@@ -137,7 +138,7 @@ async function checkInToEvent(
       eventStartTime: event.startTime,
       eventEndTime: event.endTime,
       eventCategory: event.eventCategory || event.category || 'General',
-      groupSize: totalAttendees,
+      totalAttendees,
       checkedIn: true,
       attended: false,
       registeredAt: new Date(timestamp),
@@ -149,7 +150,9 @@ async function checkInToEvent(
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, hasGuests, guestCount, timestamp } = await request.json();
+    const body = await request.json();
+    const { name, email, hasGuests, timestamp } = body;
+    const guestCount = parseInt(body.guestCount) || 0;
 
     if (!name || !email) {
       return NextResponse.json({ error: 'Name and email are required' }, { status: 400 });
@@ -220,9 +223,13 @@ export async function POST(request: NextRequest) {
       // Check which active events this volunteer is registered for
       const registeredEvents = await Promise.all(
         activeEvents.map(async ({ event }) => {
+          const orConditions: any[] = [{ userEmail: normalizedEmail }];
+          if (volunteer.linkedUserId) {
+            orConditions.push({ userId: volunteer.linkedUserId });
+          }
           const reg = await EventRegistration.findOne({
             eventId: event._id,
-            $or: [{ userEmail: normalizedEmail }, { userId: volunteer.linkedUserId }],
+            $or: orConditions,
             cancelled: { $ne: true },
           });
           return reg ? event : null;
@@ -247,33 +254,53 @@ export async function POST(request: NextRequest) {
     for (const event of eventsToCheckIn) {
       await checkInToEvent(
         event, volunteer, normalizedEmail, name,
-        totalAttendees, hasGuests, actualGuestCount, timestamp || new Date().toISOString()
+        totalAttendees, timestamp || new Date().toISOString()
       );
     }
 
-    // Log to HoursLog
+    // Calculate estimated event hours for pending approval
+    function calcEventHours(event: any): number {
+      try {
+        const [startH, startM] = event.startTime.split(':').map(Number);
+        const [endH, endM] = event.endTime.split(':').map(Number);
+        const mins = (endH * 60 + endM) - (startH * 60 + startM);
+        return Math.round((mins / 60) * 10) / 10;
+      } catch {
+        return 0;
+      }
+    }
+
+    const estimatedHours = eventsToCheckIn.reduce((sum: number, e: any) => sum + calcEventHours(e), 0);
     const eventTitles = eventsToCheckIn.map((e: any) => e.title);
-    await HoursLog.create({
-      volunteerId: volunteer._id,
-      volunteerName: name,
-      email: normalizedEmail,
-      date: checkInTime,
-      eventId: eventsToCheckIn[0]?._id,
-      eventTitle: eventTitles.join(' + ') || undefined,
-      category: eventsToCheckIn.length > 0 ? 'Event Check-In' : 'Check-In',
-      description: eventsToCheckIn.length > 0
-        ? `Event${eventsToCheckIn.length > 1 ? 's' : ''}: ${eventTitles.join(' + ')}${hasGuests ? ` (with ${actualGuestCount} guest${actualGuestCount > 1 ? 's' : ''})` : ''}`
-        : hasGuests
-        ? `Check-in with ${actualGuestCount} guest${actualGuestCount > 1 ? 's' : ''} (${totalAttendees} total people)`
-        : 'Check-in (individual)',
-      isUniqueVolunteer: true,
-      guestCount: actualGuestCount,
-      totalAttendees,
-      hasGuests: hasGuests || false,
-      hours: 0,
-      source: 'Universal Check-In',
-      matchType,
-    });
+    const hasLinkedAccount = !!volunteer.linkedUserId;
+
+    if (estimatedHours > 0 || eventsToCheckIn.length > 0) {
+      await HoursLog.create({
+        volunteerId: volunteer._id,
+        userId: volunteer.linkedUserId || undefined,
+        userEmail: normalizedEmail,
+        userName: name,
+        email: normalizedEmail,
+        date: checkInTime,
+        eventId: eventsToCheckIn[0]?._id,
+        eventTitle: eventTitles.join(' + ') || undefined,
+        category: eventsToCheckIn.length > 0 ? 'Event Check-In' : 'Check-In',
+        description: eventsToCheckIn.length > 0
+          ? `Event${eventsToCheckIn.length > 1 ? 's' : ''}: ${eventTitles.join(' + ')}${hasGuests ? ` (with ${actualGuestCount} guest${actualGuestCount > 1 ? 's' : ''})` : ''}`
+          : hasGuests
+          ? `Check-in with ${actualGuestCount} guest${actualGuestCount > 1 ? 's' : ''} (${totalAttendees} total people)`
+          : 'Check-in (individual)',
+        isUniqueVolunteer: true,
+        guestCount: actualGuestCount,
+        totalAttendees,
+        hasGuests: hasGuests || false,
+        hours: estimatedHours,
+        // Pending approval for linked accounts with event hours; walk-ins tracked as-is
+        pendingApproval: hasLinkedAccount && estimatedHours > 0,
+        source: 'Universal Check-In',
+        matchType,
+      });
+    }
 
     const responseMessage = eventsToCheckIn.length > 1
       ? `Checked in for ${eventsToCheckIn.length} events`

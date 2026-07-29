@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       .reduce((sum, r) => sum + r.hoursCompleted, 0);
 
     const manualHours = hoursLogs
-      .filter(log => !log.autoAssigned)
+      .filter((log: any) => !log.autoAssigned && !log.pendingApproval)
       .reduce((sum, log) => sum + log.hours, 0);
 
     const totalHours = eventHours + manualHours;
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     const categoryMap = new Map<string, { count: number; hours: number }>();
 
     for (const event of allEvents) {
-      const category = event.category || 'Uncategorized';
+      const category = event.eventCategory || 'Uncategorized';
       if (!categoryMap.has(category)) {
         categoryMap.set(category, { count: 0, hours: 0 });
       }

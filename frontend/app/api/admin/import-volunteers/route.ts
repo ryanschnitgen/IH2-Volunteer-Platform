@@ -185,11 +185,44 @@ export async function POST(request: NextRequest) {
         // Update existing volunteer
         matchedCsvIndices.add(i);
         const updateFields: any = { lastUpdated: new Date() };
-        if (csvData.username) {
-          updateFields.username = csvData.username;
+        if (csvData.username) updateFields.username = csvData.username;
+        if (csvData.email) updateFields.email = csvData.email;
+        const fr = csvData.fullRow;
+        if (fr.CellPhone?.toString().trim()) updateFields.phone = fr.CellPhone.toString().trim();
+        if (fr.Address1?.toString().trim()) updateFields.address = fr.Address1.toString().trim();
+        if (fr.City?.toString().trim()) updateFields.city = fr.City.toString().trim();
+        if (fr.Province?.toString().trim()) updateFields.state = fr.Province.toString().trim();
+        if (fr.PostalCode?.toString().trim()) updateFields.zipCode = fr.PostalCode.toString().trim();
+        if (fr.Country?.toString().trim()) updateFields.country = fr.Country.toString().trim();
+        if (fr.Birthday) {
+          try {
+            const parts = fr.Birthday.split('/');
+            if (parts.length === 3) {
+              let month = parseInt(parts[0]);
+              let day = parseInt(parts[1]);
+              let year = parseInt(parts[2]);
+              if (year < 100) year += 2000;
+              updateFields.birthday = new Date(year, month - 1, day);
+            }
+          } catch (e) {}
         }
-        if (csvData.email) {
-          updateFields.email = csvData.email;
+        if (fr['Q - Able to lift heavy items'] !== undefined) {
+          updateFields.canLiftHeavy = fr['Q - Able to lift heavy items'].toString().toLowerCase() === 'yes';
+        }
+        if (fr.HoursWorked !== undefined && fr.HoursWorked !== null) {
+          updateFields.lifetimeHours = fr.HoursWorked;
+        }
+        if (fr.VolunteerDateJoined) {
+          try {
+            const parts = fr.VolunteerDateJoined.split('/');
+            if (parts.length === 3) {
+              let month = parseInt(parts[0]);
+              let day = parseInt(parts[1]);
+              let year = parseInt(parts[2]);
+              if (year < 100) year += 2000;
+              updateFields.volunteerDateJoined = new Date(year, month - 1, day);
+            }
+          } catch (e) {}
         }
         bulkOps.push({
           updateOne: {

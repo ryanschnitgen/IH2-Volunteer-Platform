@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       canLiftHeavy,
     } = await request.json();
 
-    if (!userId || !firstName || !lastName || !email) {
+    if (!userId || !firstName || !email) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }

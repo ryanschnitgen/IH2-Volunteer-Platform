@@ -91,22 +91,32 @@ export async function POST(request: NextRequest) {
       message: 'Password reset email sent successfully',
     });
   } catch (error: any) {
-    console.error('❌ Server-side password reset error:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-
-    let errorMessage = 'Failed to send password reset email';
+    console.error('Password reset error:', error.code, error.message);
 
     if (error.code === 'auth/user-not-found') {
-      errorMessage = 'No account found with this email address';
-    } else if (error.code === 'auth/invalid-email') {
-      errorMessage = 'Invalid email address';
-    } else if (error.message) {
-      errorMessage = error.message;
+      return NextResponse.json(
+        { error: 'No account found with this email address' },
+        { status: 404 }
+      );
+    }
+
+    if (error.code === 'auth/invalid-email') {
+      return NextResponse.json(
+        { error: 'Invalid email address' },
+        { status: 400 }
+      );
+    }
+
+    // Google-only accounts can't receive a password reset link
+    if (error.code === 'auth/invalid-provider-id' || error.message?.includes('INVALID_PROVIDER_ID') || error.message?.includes('PASSWORD_LOGIN_DISABLED')) {
+      return NextResponse.json(
+        { error: 'This account uses Google sign-in. Please sign in with Google instead.' },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json(
-      { error: errorMessage },
+      { error: error.message || 'Failed to send password reset email' },
       { status: 500 }
     );
   }

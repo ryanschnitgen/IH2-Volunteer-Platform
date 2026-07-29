@@ -24,7 +24,7 @@ interface Event {
 export default function EventPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, waiverSigned } = useAuth();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -83,6 +83,11 @@ export default function EventPage() {
   const handleRegister = async () => {
     if (!user) {
       router.push("/login");
+      return;
+    }
+
+    if (!waiverSigned) {
+      router.push("/waiver");
       return;
     }
 
@@ -276,6 +281,10 @@ export default function EventPage() {
                     Log In to Register
                   </button>
                 </div>
+              ) : event?.status === 'cancelled' ? (
+                <div className="text-center">
+                  <p className="text-gray-600">This event has been cancelled</p>
+                </div>
               ) : isPastEvent ? (
                 <div className="text-center">
                   <p className="text-gray-600">This event has already passed</p>
@@ -288,7 +297,7 @@ export default function EventPage() {
                 <div className="text-center">
                   <p className="text-green-600 font-semibold mb-4">You are registered for this event</p>
                   <button
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() => router.push("/my-schedule")}
                     className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-semibold transition"
                   >
                     View My Registrations

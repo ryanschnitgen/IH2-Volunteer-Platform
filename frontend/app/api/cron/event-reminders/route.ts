@@ -10,11 +10,8 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
@@ -31,9 +28,12 @@ export async function GET(request: NextRequest) {
     reminderWindowEnd.setMinutes(reminderWindowEnd.getMinutes() + 30);
 
     // Get all active events happening tomorrow
-    const tomorrowDateStr = tomorrow.toISOString().split('T')[0];
+    const dayStart = new Date(tomorrow);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const dayEnd = new Date(tomorrow);
+    dayEnd.setUTCHours(23, 59, 59, 999);
     const upcomingEvents = await Event.find({
-      date: tomorrowDateStr,
+      date: { $gte: dayStart, $lte: dayEnd },
       status: 'active',
     });
 
@@ -51,7 +51,8 @@ export async function GET(request: NextRequest) {
       // Get all active registrations for this event
       const registrations = await EventRegistration.find({
         eventId: event._id.toString(),
-        cancelled: false,
+        cancelled: { $ne: true },
+        reminderSentAt: { $exists: false },
       });
 
       if (registrations.length === 0) continue;
@@ -141,7 +142,9 @@ export async function GET(request: NextRequest) {
               </div>
             `,
           }),
-        }).then(res => res.json());
+        }).then(res => res.json()).then(async () => {
+          await EventRegistration.findByIdAndUpdate(registration._id, { reminderSentAt: new Date() });
+        });
 
         emailPromises.push(emailPromise);
         totalRemindersSent++;

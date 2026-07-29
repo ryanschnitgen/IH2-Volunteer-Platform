@@ -9,7 +9,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { additionalAttendees, attendeeNames } = await request.json();
+    const { additionalAttendees, attendeeNames, isGroupCheckIn } = await request.json();
     const { id: registrationId } = await params;
 
     console.log('Updating registration:', registrationId);
@@ -33,9 +33,12 @@ export async function PATCH(
     const newTotalAttendees = 1 + numAdditional;
     const attendeeDifference = newTotalAttendees - oldTotalAttendees;
 
-    // Validate attendee names if additional attendees specified
+    // Inherit isGroupCheckIn from existing registration if not explicitly provided
+    const groupCheckIn = isGroupCheckIn !== undefined ? isGroupCheckIn : (registration.isGroupCheckIn || false);
+
+    // Validate attendee names — skip for group check-ins (guests without accounts)
     const names = attendeeNames || [];
-    if (numAdditional > 0 && names.length !== numAdditional) {
+    if (numAdditional > 0 && !groupCheckIn && names.length !== numAdditional) {
       return NextResponse.json(
         { error: 'Please provide names for all additional attendees' },
         { status: 400 }
@@ -63,8 +66,9 @@ export async function PATCH(
 
     // Update the registration
     registration.additionalAttendees = numAdditional;
-    registration.attendeeNames = names;
+    registration.attendeeNames = groupCheckIn ? [] : names;
     registration.totalAttendees = newTotalAttendees;
+    registration.isGroupCheckIn = groupCheckIn;
     await registration.save();
 
     // Update event spots

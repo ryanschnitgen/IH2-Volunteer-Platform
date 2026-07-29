@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import EventRegistration from '@backend/lib/models/EventRegistration';
+import { isAdmin } from '@backend/lib/admin';
 
 // Get user's event registrations
 export async function GET(request: NextRequest) {
@@ -45,7 +46,11 @@ export async function GET(request: NextRequest) {
 // Update registration attendance status
 export async function PATCH(request: NextRequest) {
   try {
-    const { registrationId, attended } = await request.json();
+    const { registrationId, attended, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!registrationId || typeof attended !== 'boolean') {
       return NextResponse.json(

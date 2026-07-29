@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import Event from '@backend/lib/models/Event';
+import EventRegistration from '@backend/lib/models/EventRegistration';
+import { isAdmin } from '@backend/lib/admin';
 
 // Get all events
 export async function GET(request: NextRequest) {
@@ -41,6 +43,10 @@ export async function POST(request: NextRequest) {
   try {
     console.log('=== EVENT CREATION STARTED ===');
     const eventData = await request.json();
+
+    if (!isAdmin(eventData.adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
     console.log('Received event data:', JSON.stringify(eventData, null, 2));
 
     const {
@@ -137,7 +143,11 @@ export async function POST(request: NextRequest) {
 // Update event
 export async function PATCH(request: NextRequest) {
   try {
-    const { eventId, ...updates } = await request.json();
+    const { eventId, adminEmail, ...updates } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!eventId) {
       return NextResponse.json(
@@ -151,6 +161,15 @@ export async function PATCH(request: NextRequest) {
     // If date is being updated, convert to Date object
     if (updates.date) {
       updates.date = new Date(updates.date);
+    }
+
+    // If spotsAvailable changed, recompute spotsRemaining by applying the delta
+    if (updates.spotsAvailable !== undefined) {
+      const currentEvent = await Event.findById(eventId);
+      if (currentEvent) {
+        const delta = updates.spotsAvailable - currentEvent.spotsAvailable;
+        updates.spotsRemaining = Math.max(0, currentEvent.spotsRemaining + delta);
+      }
     }
 
     const event = await Event.findByIdAndUpdate(
@@ -180,6 +199,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('id');
+    const adminEmail = searchParams.get('adminEmail');
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!eventId) {
       return NextResponse.json(
@@ -198,6 +222,9 @@ export async function DELETE(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Cascade-delete all registrations for this event
+    await EventRegistration.deleteMany({ eventId });
 
     return NextResponse.json({ deleted: true });
   } catch (error: any) {

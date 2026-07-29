@@ -3,10 +3,15 @@ import connectDB from '@backend/lib/db/mongodb';
 import Event from '@backend/lib/models/Event';
 import EventRegistration from '@backend/lib/models/EventRegistration';
 import HoursLog from '@backend/lib/models/HoursLog';
+import { isAdmin } from '@backend/lib/admin';
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, hours } = await request.json();
+    const { eventId, hours, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!eventId) {
       return NextResponse.json(
@@ -35,6 +40,7 @@ export async function POST(request: NextRequest) {
       const startMinutes = parseInt(start[0]) * 60 + parseInt(start[1]);
       const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
       hoursToAssign = Math.round(((endMinutes - startMinutes) / 60) * 10) / 10;
+      if (hoursToAssign <= 0) hoursToAssign += 24;
     }
 
     console.log(`Assigning ${hoursToAssign} hours for event: ${event.title}`);
@@ -50,21 +56,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`Found ${noShowRegistrations.length} no-show registrations to remove`);
 
-    // Delete no-show registrations
-    for (const noShow of noShowRegistrations) {
-      try {
-        await EventRegistration.findByIdAndDelete(noShow._id);
-
-        // Return spots to the event
-        await Event.findByIdAndUpdate(eventId, {
-          $inc: { spotsRemaining: noShow.totalAttendees || 1 }
-        });
-
-        console.log(`  ✓ Removed no-show registration for ${noShow.userEmail}`);
-      } catch (error: any) {
-        console.error(`  ✗ Error removing no-show for ${noShow.userEmail}:`, error.message);
-      }
-    }
+    // No-shows are left as-is (attended: false); they are only skipped from hour assignment
 
     // Get all registrations that either:
     // 1. Checked in via QR code (checkedIn: true) - automatic approval
@@ -89,19 +81,27 @@ export async function POST(request: NextRequest) {
 
     for (const registration of registrations) {
       try {
-        // Check if hours already assigned for this specific event
-        const existing = await HoursLog.findOne({
+        // Check if a pending check-in entry exists — approve it instead of creating a new one
+        const pendingEntry = await HoursLog.findOne({
           userId: registration.userId,
           eventId,
+          pendingApproval: true,
         });
 
-        if (existing) {
-          console.log(`  → Skipping ${registration.userEmail} (already assigned for this event)`);
+        // Check if hours already fully assigned (non-pending) for this event
+        const approvedEntry = await HoursLog.findOne({
+          userId: registration.userId,
+          eventId,
+          pendingApproval: { $ne: true },
+        });
+
+        if (approvedEntry) {
+          console.log(`  → Skipping ${registration.userEmail} (hours already approved for this event)`);
           results.skipped++;
           continue;
         }
 
-        // Also check for any hours on this date to prevent duplicates
+        // Also check for auto-assigned hours on this date from a different event
         const eventDateStart = new Date(event.date);
         eventDateStart.setHours(0, 0, 0, 0);
         const eventDateEnd = new Date(event.date);
@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
           userId: registration.userId,
           date: { $gte: eventDateStart, $lte: eventDateEnd },
           autoAssigned: true,
+          pendingApproval: { $ne: true },
         });
 
         if (existingOnDate && existingOnDate.eventId?.toString() !== eventId) {
@@ -127,22 +128,36 @@ export async function POST(request: NextRequest) {
         // For group check-ins, multiply hours by the total number of attendees
         const totalHoursToLog = isGroupCheckIn ? hoursToAssign * groupSize : hoursToAssign;
 
-        // Create hours log entry
-        await HoursLog.create({
-          userId: registration.userId,
-          userEmail: registration.userEmail,
-          userName: registration.userName,
-          eventId,
-          eventTitle: event.title,
-          hours: totalHoursToLog,
-          date: event.date,
-          autoAssigned: true,
-          notes: isGroupCheckIn
-            ? `Auto-assigned for ${groupSize} ${groupSize === 1 ? 'person' : 'people'} (group check-in) - ${hoursToAssign} hours each`
-            : isQRCheckIn
-            ? `Auto-assigned - QR code check-in at ${event.title}`
-            : `Auto-assigned for attending ${event.title}`,
-        });
+        const noteText = isGroupCheckIn
+          ? `Auto-assigned for ${groupSize} ${groupSize === 1 ? 'person' : 'people'} (group check-in) - ${hoursToAssign} hours each`
+          : isQRCheckIn
+          ? `Auto-assigned - QR code check-in at ${event.title}`
+          : `Auto-assigned for attending ${event.title}`;
+
+        if (pendingEntry) {
+          // Approve the pending check-in entry with final hours
+          await HoursLog.findByIdAndUpdate(pendingEntry._id, {
+            hours: totalHoursToLog,
+            autoAssigned: true,
+            pendingApproval: false,
+            notes: noteText,
+          });
+          console.log(`  ✓ Approved pending hours for ${registration.userEmail}`);
+        } else {
+          // Create hours log entry directly
+          await HoursLog.create({
+            userId: registration.userId,
+            userEmail: registration.userEmail,
+            userName: registration.userName,
+            eventId,
+            eventTitle: event.title,
+            hours: totalHoursToLog,
+            date: event.date,
+            autoAssigned: true,
+            pendingApproval: false,
+            notes: noteText,
+          });
+        }
 
         // Update the registration to reflect hours completed and attended status
         await EventRegistration.findByIdAndUpdate(registration._id, {

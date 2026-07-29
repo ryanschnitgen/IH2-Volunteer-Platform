@@ -24,8 +24,10 @@ export default function LogHoursPage() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [clockError, setClockError] = useState("");
+  const [clockSuccess, setClockSuccess] = useState("");
+  const [logError, setLogError] = useState("");
+  const [logSuccess, setLogSuccess] = useState("");
   const [hoursLogs, setHoursLogs] = useState<HoursLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
 
@@ -111,13 +113,13 @@ export default function LogHoursPage() {
 
   const handleClockIn = async () => {
     if (!user || !clockInActivity.trim()) {
-      setError("Please enter an activity description");
+      setClockError("Please enter an activity description");
       return;
     }
 
     try {
       setClockLoading(true);
-      setError("");
+      setClockError("");
 
       const response = await fetch("/api/clock-in-out", {
         method: "POST",
@@ -137,13 +139,13 @@ export default function LogHoursPage() {
         throw new Error(data.error || "Failed to clock in");
       }
 
-      setSuccess("Clocked in successfully!");
+      setClockSuccess("Clocked in successfully!");
       setIsClockedIn(true);
       setActiveClockIn(data.clockIn);
       setClockInActivity("");
       setClockInNotes("");
     } catch (err: any) {
-      setError(err.message || "Failed to clock in");
+      setClockError(err.message || "Failed to clock in");
     } finally {
       setClockLoading(false);
     }
@@ -154,7 +156,7 @@ export default function LogHoursPage() {
 
     try {
       setClockLoading(true);
-      setError("");
+      setClockError("");
 
       const response = await fetch("/api/clock-in-out", {
         method: "PATCH",
@@ -171,13 +173,13 @@ export default function LogHoursPage() {
         throw new Error(data.error || "Failed to clock out");
       }
 
-      setSuccess(`Clocked out successfully! Total time: ${data.hours} hours`);
+      setClockSuccess(`Clocked out successfully! Total time: ${data.hours} hours`);
       setIsClockedIn(false);
       setActiveClockIn(null);
       setClockOutNotes("");
       loadHoursLogs(); // Reload hours logs to show the new entry
     } catch (err: any) {
-      setError(err.message || "Failed to clock out");
+      setClockError(err.message || "Failed to clock out");
     } finally {
       setClockLoading(false);
     }
@@ -185,14 +187,14 @@ export default function LogHoursPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setLogError("");
+    setLogSuccess("");
 
     if (!user) return;
 
     const hoursNum = parseFloat(hours);
     if (isNaN(hoursNum) || hoursNum <= 0) {
-      setError("Please enter a valid number of hours greater than 0");
+      setLogError("Please enter a valid number of hours greater than 0");
       return;
     }
 
@@ -218,7 +220,7 @@ export default function LogHoursPage() {
         throw new Error(data.error || "Failed to log hours");
       }
 
-      setSuccess(`Successfully logged ${hoursNum} hours!`);
+      setLogSuccess(`Successfully logged ${hoursNum} hours!`);
       setHours("");
       setDate(new Date().toISOString().split('T')[0]);
       setNotes("");
@@ -226,7 +228,7 @@ export default function LogHoursPage() {
       // Reload hours logs
       await loadHoursLogs();
     } catch (err: any) {
-      setError(err.message);
+      setLogError(err.message);
     } finally {
       setLoading(false);
     }
@@ -241,7 +243,7 @@ export default function LogHoursPage() {
   };
 
   const totalManualHours = hoursLogs
-    .filter(log => !log.autoAssigned)
+    .filter((log: any) => !log.autoAssigned && !log.pendingApproval)
     .reduce((sum, log) => sum + log.hours, 0);
 
   if (authLoading || loadingLogs) {
@@ -283,15 +285,15 @@ export default function LogHoursPage() {
             Track your time for non-event volunteer work like sorting donations, office tasks, etc.
           </p>
 
-          {error && !(success) && (
+          {clockError && !clockSuccess && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
+              {clockError}
             </div>
           )}
 
-          {success && (
+          {clockSuccess && (
             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-              {success}
+              {clockSuccess}
             </div>
           )}
 
@@ -382,15 +384,15 @@ export default function LogHoursPage() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Log New Hours</h2>
 
-          {error && (
+          {logError && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
+              {logError}
             </div>
           )}
 
-          {success && (
+          {logSuccess && (
             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-              {success}
+              {logSuccess}
             </div>
           )}
 
@@ -475,12 +477,15 @@ export default function LogHoursPage() {
                         <span className="text-gray-600">
                           {log.hours === 1 ? "hour" : "hours"}
                         </span>
-                        {!log.autoAssigned && (
+                        {(log as any).pendingApproval ? (
+                          <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-xs font-semibold">
+                            Pending
+                          </span>
+                        ) : !log.autoAssigned ? (
                           <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
                             Manual
                           </span>
-                        )}
-                        {log.autoAssigned && (
+                        ) : (
                           <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">
                             Event
                           </span>

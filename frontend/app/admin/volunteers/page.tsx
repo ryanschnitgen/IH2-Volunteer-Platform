@@ -47,6 +47,9 @@ export default function AdminVolunteersPage() {
   const [volunteerToDelete, setVolunteerToDelete] = useState<VolunteerProfile | null>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
+  const [volunteerHourTotals, setVolunteerHourTotals] = useState<Record<string, { approved: number; pending: number }>>({});
+  const [approvingHourId, setApprovingHourId] = useState<string | null>(null);
+
   // Confirm modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState<{
@@ -83,8 +86,8 @@ export default function AdminVolunteersPage() {
 
       // Fetch both volunteers and users
       const [volunteersRes, usersRes] = await Promise.all([
-        fetch("/api/volunteers"),
-        fetch("/api/admin/users"),
+        fetch(`/api/volunteers?adminEmail=${encodeURIComponent(user?.email || '')}`),
+        fetch(`/api/admin/users?adminEmail=${encodeURIComponent(user?.email || '')}`),
       ]);
 
       const volunteersData = await volunteersRes.json();
@@ -141,6 +144,15 @@ export default function AdminVolunteersPage() {
       });
 
       setVolunteers(mergedList);
+
+      // Load platform hours totals (approved + pending) per volunteer
+      try {
+        const totalsRes = await fetch(`/api/hours/volunteer-totals?adminEmail=${encodeURIComponent(user?.email || '')}`);
+        const totalsData = await totalsRes.json();
+        if (totalsRes.ok) setVolunteerHourTotals(totalsData.totals || {});
+      } catch {
+        // Non-fatal — list still works without totals
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -160,6 +172,7 @@ export default function AdminVolunteersPage() {
         body: JSON.stringify({
           firebaseUid: volunteer.linkedUserId,
           isAdmin: !volunteer.isAdmin,
+          adminEmail: user?.email,
         }),
       });
 
@@ -265,19 +278,59 @@ export default function AdminVolunteersPage() {
 
   const loadHoursLogs = async (userId: string) => {
     try {
-      // Automatically remove duplicates first
-      await fetch("/api/hours/remove-duplicates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-
-      // Then load the cleaned hours logs
       const response = await fetch(`/api/hours?userId=${userId}`);
       const data = await response.json();
       setHoursLogs(data.hoursLogs || []);
     } catch (error) {
       console.error("Error loading hours logs:", error);
+    }
+  };
+
+  const approveHoursLog = async (hoursLogId: string, hours?: number) => {
+    setApprovingHourId(hoursLogId);
+    try {
+      const response = await fetch("/api/hours/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hoursLogId, approved: true, hours, adminEmail: user?.email }),
+      });
+      if (response.ok && selectedVolunteer?.linkedUserId) {
+        await loadHoursLogs(selectedVolunteer.linkedUserId);
+        await loadVolunteers();
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to approve hours");
+        setTimeout(() => setError(""), 3000);
+      }
+    } catch (err: any) {
+      setError(err.message);
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setApprovingHourId(null);
+    }
+  };
+
+  const rejectHoursLog = async (hoursLogId: string) => {
+    setApprovingHourId(hoursLogId);
+    try {
+      const response = await fetch("/api/hours/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hoursLogId, approved: false, adminEmail: user?.email }),
+      });
+      if (response.ok && selectedVolunteer?.linkedUserId) {
+        await loadHoursLogs(selectedVolunteer.linkedUserId);
+        await loadVolunteers();
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to reject hours");
+        setTimeout(() => setError(""), 3000);
+      }
+    } catch (err: any) {
+      setError(err.message);
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setApprovingHourId(null);
     }
   };
 
@@ -296,16 +349,17 @@ export default function AdminVolunteersPage() {
         body: JSON.stringify({
           hoursLogId: editingHourId,
           hours: editHoursValue,
+          adminEmail: user?.email,
         }),
       });
 
-      const data = await response.json();
-      if (data.updated && selectedVolunteer?.linkedUserId) {
+      if (response.ok && selectedVolunteer?.linkedUserId) {
         await loadHoursLogs(selectedVolunteer.linkedUserId);
-        await loadVolunteers(); // Refresh to update total hours
+        await loadVolunteers();
         setEditingHourId(null);
       } else {
-        setError(data.error);
+        const data = await response.json();
+        setError(data.error || "Failed to save hours");
         setTimeout(() => setError(""), 3000);
       }
     } catch (error: any) {
@@ -330,16 +384,16 @@ export default function AdminVolunteersPage() {
   const executeDeleteHoursLog = async (hoursLogId: string) => {
     setDeletingHourId(hoursLogId);
     try {
-      const response = await fetch(`/api/hours?id=${hoursLogId}`, {
+      const response = await fetch(`/api/hours?id=${hoursLogId}&adminEmail=${encodeURIComponent(user?.email || '')}`, {
         method: "DELETE",
       });
 
-      const data = await response.json();
-      if (data.deleted && selectedVolunteer?.linkedUserId) {
+      if (response.ok && selectedVolunteer?.linkedUserId) {
         await loadHoursLogs(selectedVolunteer.linkedUserId);
-        await loadVolunteers(); // Refresh to update total hours
+        await loadVolunteers();
       } else {
-        setError(data.error);
+        const data = await response.json();
+        setError(data.error || "Failed to delete hours entry");
         setTimeout(() => setError(""), 3000);
       }
     } catch (error: any) {
@@ -363,7 +417,7 @@ export default function AdminVolunteersPage() {
   }
 
   const handleExportCSV = () => {
-    window.open('/api/admin/export-csv', '_blank');
+    window.open(`/api/admin/export-csv?adminEmail=${encodeURIComponent(user?.email || '')}`, '_blank');
   };
 
   return (
@@ -501,7 +555,7 @@ export default function AdminVolunteersPage() {
                     City
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Imported Hrs
+                    Platform Hrs
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Account Status
@@ -517,7 +571,7 @@ export default function AdminVolunteersPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredVolunteers.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                       {searchTerm ? "No volunteers found matching your search" : "No volunteers yet"}
                     </td>
                   </tr>
@@ -546,9 +600,20 @@ export default function AdminVolunteersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-purple-600">
-                          {volunteer.lifetimeHours} hrs
-                        </div>
+                        {volunteer.linkedUserId ? (
+                          <div>
+                            <div className="text-sm font-semibold text-blue-600">
+                              {(volunteerHourTotals[volunteer.linkedUserId]?.approved || 0).toFixed(1)} hrs
+                            </div>
+                            {(volunteerHourTotals[volunteer.linkedUserId]?.pending || 0) > 0 && (
+                              <div className="text-xs text-amber-600">
+                                +{(volunteerHourTotals[volunteer.linkedUserId]?.pending || 0).toFixed(1)} pending
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-400">—</div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {volunteer.linkedUserId ? (
@@ -647,15 +712,24 @@ export default function AdminVolunteersPage() {
                       <div>
                         <span className="font-medium text-gray-700">Platform Hours:</span>
                         <span className="ml-2 text-blue-600 font-semibold">
-                          {hoursLogs.reduce((sum, log) => sum + log.hours, 0).toFixed(2)} hours
+                          {hoursLogs.filter(l => !l.pendingApproval).reduce((sum: number, log: any) => sum + log.hours, 0).toFixed(2)} hrs
                         </span>
-                        <span className="ml-1 text-xs text-gray-500">(events &amp; manual)</span>
+                        <span className="ml-1 text-xs text-gray-500">(approved)</span>
                       </div>
+                      {hoursLogs.some(l => l.pendingApproval) && (
+                        <div>
+                          <span className="font-medium text-amber-700">Pending Approval:</span>
+                          <span className="ml-2 text-amber-600 font-semibold">
+                            {hoursLogs.filter(l => l.pendingApproval).reduce((sum: number, log: any) => sum + log.hours, 0).toFixed(2)} hrs
+                          </span>
+                        </div>
+                      )}
                       <div className="border-t border-blue-200 pt-2 mt-1">
                         <span className="font-medium text-gray-700">Total Hours:</span>
                         <span className="ml-2 text-green-600 font-bold text-lg">
-                          {((selectedVolunteer.lifetimeHours || 0) + hoursLogs.reduce((sum, log) => sum + log.hours, 0)).toFixed(2)} hours
+                          {((selectedVolunteer.lifetimeHours || 0) + hoursLogs.filter(l => !l.pendingApproval).reduce((sum: number, log: any) => sum + log.hours, 0)).toFixed(2)} hrs
                         </span>
+                        <span className="ml-1 text-xs text-gray-400">(imported + approved)</span>
                       </div>
                     </>
                   )}
@@ -709,13 +783,13 @@ export default function AdminVolunteersPage() {
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Event/Activity</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Hours</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {hoursLogs.map((log) => (
-                        <tr key={log._id}>
+                      {hoursLogs.map((log: any) => (
+                        <tr key={log._id} className={log.pendingApproval ? "bg-amber-50" : ""}>
                           <td className="px-4 py-2 text-sm text-gray-900">{formatDate(log.date)}</td>
                           <td className="px-4 py-2 text-sm text-gray-600">{log.eventTitle || log.notes || "Manual Entry"}</td>
                           <td className="px-4 py-2 text-sm">
@@ -743,18 +817,39 @@ export default function AdminVolunteersPage() {
                                 </button>
                               </div>
                             ) : (
-                              <span className="font-semibold text-purple-600">{log.hours.toFixed(2)} hrs</span>
+                              <span className={`font-semibold ${log.pendingApproval ? "text-amber-600" : "text-purple-600"}`}>
+                                {log.hours.toFixed(2)} hrs
+                              </span>
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm">
-                            {log.autoAssigned ? (
+                            {log.pendingApproval ? (
+                              <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">Pending</span>
+                            ) : log.autoAssigned ? (
                               <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Event</span>
                             ) : (
                               <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">Manual</span>
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm">
-                            {editingHourId !== log._id && (
+                            {log.pendingApproval ? (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => approveHoursLog(log._id)}
+                                  disabled={approvingHourId === log._id}
+                                  className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                                >
+                                  {approvingHourId === log._id ? "..." : "Approve"}
+                                </button>
+                                <button
+                                  onClick={() => rejectHoursLog(log._id)}
+                                  disabled={approvingHourId === log._id}
+                                  className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 disabled:opacity-50"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            ) : editingHourId !== log._id ? (
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => startEditHours(log)}
@@ -770,7 +865,7 @@ export default function AdminVolunteersPage() {
                                   {deletingHourId === log._id ? "..." : "Delete"}
                                 </button>
                               </div>
-                            )}
+                            ) : null}
                           </td>
                         </tr>
                       ))}

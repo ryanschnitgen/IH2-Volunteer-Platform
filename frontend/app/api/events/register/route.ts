@@ -4,11 +4,17 @@ import Event from '@backend/lib/models/Event';
 import EventRegistration from '@backend/lib/models/EventRegistration';
 import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 import User from '@backend/lib/models/User';
+import { isAdmin } from '@backend/lib/admin';
 
 // Register for an event
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, userId, userEmail, userName, additionalAttendees, attendeeNames, isGroupCheckIn, retroactive } = await request.json();
+    const { eventId, userId, userEmail, userName, additionalAttendees, attendeeNames, isGroupCheckIn, retroactive, adminEmail } = await request.json();
+
+    // Retroactive registration bypasses waiver check — admin only
+    if (retroactive && !isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     await connectDB();
 
@@ -91,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already registered
-    const existing = await EventRegistration.findOne({ eventId, userId: finalUserId });
+    const existing = await EventRegistration.findOne({ eventId, userId: finalUserId, cancelled: { $ne: true } });
     if (existing) {
       return NextResponse.json(
         { error: 'Already registered for this event' },

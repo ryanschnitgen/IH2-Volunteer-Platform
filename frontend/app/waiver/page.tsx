@@ -41,6 +41,7 @@ export default function WaiverPage() {
         body: JSON.stringify({
           userId: user.uid,
           email: user.email,
+          displayName: user.displayName,
         }),
       });
 

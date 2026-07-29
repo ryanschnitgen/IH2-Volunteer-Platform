@@ -21,6 +21,7 @@ export interface IHoursLog {
   description?: string; // Activity description
   source?: string; // Where this log came from (e.g., "Volunteer Sign-In Form")
   matchType?: string; // How the volunteer was matched (email, exact-name, fuzzy-name, new)
+  pendingApproval?: boolean; // True when hours are estimated and awaiting admin approval
   createdAt: Date;
   updatedAt: Date;
 }
@@ -106,6 +107,11 @@ const HoursLogSchema = new mongoose.Schema<IHoursLog>(
     matchType: {
       type: String,
       enum: ['email', 'exact-name', 'fuzzy-name', 'new', null],
+    },
+    pendingApproval: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
   },
   {

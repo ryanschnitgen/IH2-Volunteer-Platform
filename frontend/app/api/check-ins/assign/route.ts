@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         eventDate: event.date,
         eventStartTime: event.startTime,
         eventEndTime: event.endTime,
-        eventCategory: event.category || 'General',
+        eventCategory: event.eventCategory || 'General',
         checkedIn: true,
         attended: false,
       });
