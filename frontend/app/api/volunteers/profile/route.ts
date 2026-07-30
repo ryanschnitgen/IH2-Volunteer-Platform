@@ -71,7 +71,10 @@ export async function POST(request: NextRequest) {
       profile.country = country || profile.country;
       if (birthday) profile.birthday = new Date(birthday);
       if (typeof canLiftHeavy === 'boolean') profile.canLiftHeavy = canLiftHeavy;
-      profile.linkedUserId = userId;
+      // Only link if not already linked to a different account
+      if (!profile.linkedUserId || profile.linkedUserId === userId) {
+        profile.linkedUserId = userId;
+      }
       profile.lastUpdated = new Date();
       await profile.save();
     } else {

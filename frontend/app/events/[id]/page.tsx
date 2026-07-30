@@ -36,47 +36,40 @@ export default function EventPage() {
 
   useEffect(() => {
     if (eventId) {
-      loadEvent();
-      if (user) {
-        checkRegistration();
-      }
+      loadPageData();
     }
   }, [eventId, user]);
 
-  const loadEvent = async () => {
+  const loadPageData = async () => {
     if (!eventId) return;
-
+    setLoading(true);
     try {
-      const response = await fetch(`/api/events/${eventId}`);
-      const data = await response.json();
+      const fetches: Promise<any>[] = [fetch(`/api/events/${eventId}`)];
+      if (user) {
+        fetches.push(fetch(`/api/events/registrations?userId=${user.uid}`));
+      }
+      const [eventRes, regRes] = await Promise.all(fetches);
 
-      if (response.ok) {
-        setEvent(data.event);
+      const eventData = await eventRes.json();
+      if (eventRes.ok) {
+        setEvent(eventData.event);
       } else {
-        setError(data.error || "Event not found");
+        setError(eventData.error || "Event not found");
+      }
+
+      if (regRes) {
+        const regData = await regRes.json();
+        if (regRes.ok) {
+          const registered = regData.registrations?.some(
+            (reg: any) => reg.eventId === eventId && !reg.cancelled
+          );
+          setIsRegistered(!!registered);
+        }
       }
     } catch (err) {
       setError("Failed to load event");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkRegistration = async () => {
-    if (!user || !eventId) return;
-
-    try {
-      const response = await fetch(`/api/events/registrations?userId=${user.uid}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        const registered = data.registrations.some(
-          (reg: any) => reg.eventId === eventId && !reg.cancelled
-        );
-        setIsRegistered(registered);
-      }
-    } catch (err) {
-      console.error("Failed to check registration:", err);
     }
   };
 
@@ -116,7 +109,7 @@ export default function EventPage() {
 
       setSuccess("Successfully registered for this event!");
       setIsRegistered(true);
-      loadEvent();
+      loadPageData();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
       setError(err.message);

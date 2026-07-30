@@ -137,7 +137,7 @@ export default function AdminEventsPage() {
 
     try {
       // Add cache busting to ensure fresh data
-      const response = await fetch(`/api/events/registrations/all?userId=${user?.uid || ''}&t=${Date.now()}`, {
+      const response = await fetch(`/api/events/registrations/all?adminEmail=${encodeURIComponent(user?.email || '')}&t=${Date.now()}`, {
         cache: 'no-store',
       });
       const data = await response.json();
@@ -280,10 +280,6 @@ export default function AdminEventsPage() {
         return;
       }
 
-      console.log('=== CLIENT: CREATING EVENT ===');
-      console.log('User:', { uid: user.uid, displayName: user.displayName, email: user.email });
-      console.log('Form data:', formData);
-
       const url = editingEvent ? "/api/events" : "/api/events";
       const method = editingEvent ? "PATCH" : "POST";
       const body = editingEvent
@@ -295,28 +291,17 @@ export default function AdminEventsPage() {
             adminEmail: user?.email,
           };
 
-      console.log('Request body:', JSON.stringify(body, null, 2));
-      console.log('Request URL:', url);
-      console.log('Request method:', method);
-
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
       const data = await response.json();
-      console.log('Response data:', data);
 
       if (!response.ok) {
-        console.error('Request failed:', data.error);
         throw new Error(data.error || "Failed to save event");
       }
-
-      console.log('Event created successfully!');
       setSuccess(
         editingEvent
           ? "Event updated successfully!"
@@ -364,9 +349,13 @@ export default function AdminEventsPage() {
 
     try {
       // Check if there are registrations
-      const regResponse = await fetch(`/api/events/registrations/all?userId=${user?.uid || ''}`);
+      const regResponse = await fetch(`/api/events/registrations/all?adminEmail=${encodeURIComponent(user?.email || '')}`);
       const regData = await regResponse.json();
       const registrations = regData.registrations?.filter((r: any) => r.eventId === eventToDelete._id) || [];
+
+      if (!regResponse.ok) {
+        console.warn('Failed to fetch registrations for delete notification — proceeding without email alerts');
+      }
 
       if (registrations.length > 0 && sendCancellationEmail) {
         // Send cancellation emails
@@ -1722,6 +1711,8 @@ export default function AdminEventsPage() {
                     setShowRegistrationsModal(false);
                     setSelectedEventForRegistrations(null);
                     setRegistrations([]);
+                    setShowAddUserForm(false);
+                    setAddUserEmail("");
                   }}
                   className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
                 >

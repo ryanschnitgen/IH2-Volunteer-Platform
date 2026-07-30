@@ -196,33 +196,41 @@ export async function POST(request: NextRequest) {
             console.log(`  ✓ Matched ${email} to registration (${match.score}% confidence)`);
             results.matched++;
           } else if (match.profile) {
-            // Create new registration from profile
+            // Create new registration from profile (only if account is linked)
             const profile = match.profile;
-            const event = await Event.findById(eventId);
 
-            if (event) {
-              const newRegistration = await EventRegistration.create({
-                eventId,
-                userId: profile.linkedUserId || '',
-                userEmail: profile.email,
-                userName: `${profile.firstName} ${profile.lastName}`,
-                eventTitle: event.title,
-                eventDate: event.date,
-                eventStartTime: event.startTime,
-                eventEndTime: event.endTime,
-                eventCategory: event.eventCategory || 'General',
-                checkedIn: true,
-                attended: false,
-              });
-
-              checkInRecord.matched = true;
-              checkInRecord.matchedUserId = profile.linkedUserId;
-              checkInRecord.matchedRegistrationId = newRegistration._id;
+            if (!profile.linkedUserId) {
+              checkInRecord.matched = false;
               checkInRecord.matchConfidence = match.score;
-              checkInRecord.notes = `Auto-created registration from profile (${match.score}% confidence)`;
+              checkInRecord.notes = `Profile found but no linked account (${match.score}% confidence)`;
+              console.log(`  ? No linked account for ${email} — stored for manual review`);
+            } else {
+              const event = await Event.findById(eventId);
 
-              console.log(`  ✓ Created registration for ${email} (${match.score}% confidence)`);
-              results.newRegistrations++;
+              if (event) {
+                const newRegistration = await EventRegistration.create({
+                  eventId,
+                  userId: profile.linkedUserId,
+                  userEmail: profile.email,
+                  userName: `${profile.firstName} ${profile.lastName}`,
+                  eventTitle: event.title,
+                  eventDate: event.date,
+                  eventStartTime: event.startTime,
+                  eventEndTime: event.endTime,
+                  eventCategory: event.eventCategory || 'General',
+                  checkedIn: true,
+                  attended: false,
+                });
+
+                checkInRecord.matched = true;
+                checkInRecord.matchedUserId = profile.linkedUserId;
+                checkInRecord.matchedRegistrationId = newRegistration._id;
+                checkInRecord.matchConfidence = match.score;
+                checkInRecord.notes = `Auto-created registration from profile (${match.score}% confidence)`;
+
+                console.log(`  ✓ Created registration for ${email} (${match.score}% confidence)`);
+                results.newRegistrations++;
+              }
             }
           }
         } else {
@@ -314,11 +322,11 @@ export async function PATCH(request: NextRequest) {
     await connectDB();
 
     const updates: any = {
-      matched: true,
       notes: notes || '',
     };
 
     if (matchedRegistrationId) {
+      updates.matched = true;
       updates.matchedRegistrationId = matchedRegistrationId;
 
       // Update registration to mark as checked in

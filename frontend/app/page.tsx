@@ -30,9 +30,10 @@ export default function Home() {
     if (!user) return;
     try {
       const currentYear = new Date().getFullYear();
+      const adminEmail = encodeURIComponent(user.email || '');
       const [hoursRes, registrationsRes] = await Promise.all([
-        fetch(`/api/hours/all?userId=${user.uid}`),
-        fetch(`/api/events/registrations/all?userId=${user.uid}`)
+        fetch(`/api/hours/all?userId=${user.uid}&adminEmail=${adminEmail}`),
+        fetch(`/api/events/registrations/all?userId=${user.uid}&adminEmail=${adminEmail}`)
       ]);
       const hoursData = await hoursRes.json();
       const registrationsData = await registrationsRes.json();

@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import HoursLog from '@backend/lib/models/HoursLog';
-import User from '@backend/lib/models/User';
+import { isAdmin } from '@backend/lib/admin';
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get('userId');
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const adminEmail = request.nextUrl.searchParams.get('adminEmail');
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     await connectDB();
-
-    const user = await User.findOne({ firebaseUid: userId }).lean();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const hoursLogs = await HoursLog.find({})
       .sort({ date: -1 })

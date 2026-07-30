@@ -118,7 +118,15 @@ export default function AdminAnalytics() {
     try {
       setExporting(true);
 
-      const dateRange = getDateRange();
+      // Use the currently typed custom dates directly so the export
+      // doesn't require a blur event before clicking Export.
+      let dateRange: { start: string; end: string } | null;
+      if (dateRangeType === 'custom') {
+        if (!customStartDate || !customEndDate) return;
+        dateRange = { start: customStartDate, end: customEndDate };
+      } else {
+        dateRange = getDateRange();
+      }
       if (!dateRange) return;
 
       const params = new URLSearchParams({

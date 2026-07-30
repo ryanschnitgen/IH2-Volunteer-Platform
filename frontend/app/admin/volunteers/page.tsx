@@ -270,6 +270,7 @@ export default function AdminVolunteersPage() {
 
   const viewDetails = async (volunteer: VolunteerProfile) => {
     setSelectedVolunteer(volunteer);
+    setHoursLogs([]);
     setShowDetailModal(true);
     if (volunteer.linkedUserId) {
       await loadHoursLogs(volunteer.linkedUserId);
@@ -279,6 +280,7 @@ export default function AdminVolunteersPage() {
   const loadHoursLogs = async (userId: string) => {
     try {
       const response = await fetch(`/api/hours?userId=${userId}`);
+      if (!response.ok) return;
       const data = await response.json();
       setHoursLogs(data.hoursLogs || []);
     } catch (error) {

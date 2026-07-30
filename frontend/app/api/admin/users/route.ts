@@ -147,13 +147,19 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete all event registrations
-    if (firebaseUid) {
-      deletePromises.push(EventRegistration.deleteMany({ userId: firebaseUid }));
+    const regQuery: any = { $or: [] };
+    if (firebaseUid) regQuery.$or.push({ userId: firebaseUid });
+    if (email) regQuery.$or.push({ userEmail: email.toLowerCase().trim() });
+    if (regQuery.$or.length > 0) {
+      deletePromises.push(EventRegistration.deleteMany(regQuery));
     }
 
     // Delete all volunteer hours
-    if (firebaseUid) {
-      deletePromises.push(HoursLog.deleteMany({ $or: [{ userId: firebaseUid }, { userEmail: email?.toLowerCase().trim() }] }));
+    const hoursQuery: any = { $or: [] };
+    if (firebaseUid) hoursQuery.$or.push({ userId: firebaseUid });
+    if (email) hoursQuery.$or.push({ userEmail: email.toLowerCase().trim() });
+    if (hoursQuery.$or.length > 0) {
+      deletePromises.push(HoursLog.deleteMany(hoursQuery));
     }
 
     await Promise.all(deletePromises);

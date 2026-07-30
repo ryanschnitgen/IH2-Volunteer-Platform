@@ -154,7 +154,11 @@ export async function DELETE(request: NextRequest) {
 
     await connectDB();
 
-    const registration = await EventRegistration.findOneAndDelete({ eventId, userId });
+    const registration = await EventRegistration.findOneAndUpdate(
+      { eventId, userId, cancelled: { $ne: true } },
+      { $set: { cancelled: true, cancellationReason: 'Cancelled by volunteer' } },
+      { new: false }
+    );
 
     if (!registration) {
       return NextResponse.json(

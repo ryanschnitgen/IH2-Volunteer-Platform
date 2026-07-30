@@ -5,12 +5,19 @@ import EventRegistration from '@backend/lib/models/EventRegistration';
 import HoursLog from '@backend/lib/models/HoursLog';
 import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 import CheckIn from '@backend/lib/models/CheckIn';
+import { isAdmin } from '@backend/lib/admin';
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const adminEmail = searchParams.get('adminEmail');
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     await connectDB();
 
-    const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || 'year';
 
     // Calculate date range
@@ -23,7 +30,7 @@ export async function GET(request: NextRequest) {
       startDate = new Date(now.getFullYear(), 0, 1);
     }
 
-    // Fetch all data in parallel
+    // Fetch all data in parallel (exclude pending hours from all metrics)
     const [
       totalVolunteers,
       allEvents,
@@ -34,7 +41,7 @@ export async function GET(request: NextRequest) {
       VolunteerProfile.countDocuments(),
       Event.find({}).lean(),
       EventRegistration.find({}).lean(),
-      HoursLog.find({}).lean(),
+      HoursLog.find({ pendingApproval: { $ne: true } }).lean(),
       CheckIn.find({}).lean(),
     ]);
 

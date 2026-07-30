@@ -142,6 +142,7 @@ export default function Opportunities() {
     setSelectedEvent(opportunity);
     setShowRegistrationModal(true);
     setIsGroupRegistration(false);
+    setIsGroupCheckIn(false);
     setAdditionalAttendees(0);
     setAttendeeNames([]);
     setError(""); // Clear any previous errors
@@ -276,6 +277,7 @@ export default function Opportunities() {
     setEditingRegistration(null);
     setSelectedEvent(null);
     setIsGroupRegistration(false);
+    setIsGroupCheckIn(false);
     setError(""); // Clear any errors
     setAdditionalAttendees(0);
     setAttendeeNames([]);

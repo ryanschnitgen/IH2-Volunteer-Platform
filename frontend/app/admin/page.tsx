@@ -38,8 +38,8 @@ export default function AdminDashboard() {
       const [usersRes, eventsRes, allRegistrationsRes, allHoursRes] = await Promise.all([
         fetch(`/api/admin/users?adminEmail=${adminEmail}&t=${timestamp}`, { cache: 'no-store' }),
         fetch(`/api/events?t=${timestamp}`, { cache: 'no-store' }),
-        fetch(`/api/events/registrations/all?userId=${user?.uid || ''}&t=${timestamp}`, { cache: 'no-store' }),
-        fetch(`/api/hours/all?userId=${user?.uid || ''}&t=${timestamp}`, { cache: 'no-store' }),
+        fetch(`/api/events/registrations/all?userId=${user?.uid || ''}&adminEmail=${adminEmail}&t=${timestamp}`, { cache: 'no-store' }),
+        fetch(`/api/hours/all?userId=${user?.uid || ''}&adminEmail=${adminEmail}&t=${timestamp}`, { cache: 'no-store' }),
       ]);
 
       const usersData = await usersRes.json();
