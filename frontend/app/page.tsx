@@ -64,6 +64,9 @@ export default function Home() {
         fetch(`/api/events/registrations?userId=${user.uid}`),
         fetch(`/api/hours?userId=${user.uid}`)
       ]);
+
+      if (!registrationsRes.ok || !hoursLogsRes.ok) return;
+
       const registrationsData = await registrationsRes.json();
       const hoursLogsData = await hoursLogsRes.json();
 

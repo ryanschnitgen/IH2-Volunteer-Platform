@@ -323,7 +323,7 @@ export default function AdminAnalytics() {
                 </div>
                 <div className="text-xs opacity-80">
                   Without registered accounts ({analytics.totalGuests > 0
-                    ? Math.round(((analytics.totalGuests - (analytics.guestVolunteers || 0)) / analytics.totalGuests) * 100)
+                    ? Math.round(((analytics.guestVolunteers || 0) / analytics.totalGuests) * 100)
                     : 0}% of {analytics.totalGuests} guests)
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function AdminAnalytics() {
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                       <span className="text-gray-700">Active vs Guest Ratio:</span>
                       <span className="font-bold text-gray-900">
-                        {((analytics.activeVolunteers / analytics.totalUniqueVolunteers) * 100).toFixed(0)}% / {((analytics.guestVolunteers / analytics.totalUniqueVolunteers) * 100).toFixed(0)}%
+                        {((analytics.activeVolunteers / (analytics.totalUniqueVolunteers || 1)) * 100).toFixed(0)}% / {((analytics.guestVolunteers / (analytics.totalUniqueVolunteers || 1)) * 100).toFixed(0)}%
                       </span>
                     </div>
                   </div>

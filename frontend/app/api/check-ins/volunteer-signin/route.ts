@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
     const eventTitles = eventsToCheckIn.map((e: any) => e.title);
     const hasLinkedAccount = !!volunteer.linkedUserId;
 
-    if (estimatedHours > 0 || eventsToCheckIn.length > 0) {
+    if (estimatedHours > 0) {
       await HoursLog.create({
         volunteerId: volunteer._id,
         userId: volunteer.linkedUserId || undefined,

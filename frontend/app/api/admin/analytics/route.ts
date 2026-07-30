@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Top volunteers (by hours)
     const volunteerHours = new Map<string, { name: string; email: string; hours: number }>();
 
-    for (const log of allHoursLogs) {
+    for (const log of hoursLogs) {
       const key = log.userEmail;
       if (!volunteerHours.has(key)) {
         volunteerHours.set(key, {

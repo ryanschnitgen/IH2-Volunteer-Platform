@@ -35,12 +35,12 @@ export async function POST(request: NextRequest) {
     event.spotsRemaining = event.spotsAvailable;
     await event.save();
 
-    // Get all registrations for this event
-    const registrations = await EventRegistration.find({ eventId });
+    // Get only active (non-cancelled) registrations for this event
+    const registrations = await EventRegistration.find({ eventId, cancelled: { $ne: true } });
 
-    // Mark all registrations as cancelled
+    // Mark all active registrations as cancelled
     await EventRegistration.updateMany(
-      { eventId },
+      { eventId, cancelled: { $ne: true } },
       {
         cancelled: true,
         cancellationReason: reason || 'Event cancelled by organizer'

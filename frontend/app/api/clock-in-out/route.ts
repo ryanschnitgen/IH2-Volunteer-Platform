@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import ClockInOut from '@backend/lib/models/ClockInOut';
 import HoursLog from '@backend/lib/models/HoursLog';
+import { isAdmin } from '@backend/lib/admin';
 
 // Clock in
 export async function POST(request: NextRequest) {
   try {
-    const { userId, userEmail, userName, activity, notes, location } = await request.json();
+    const { userId, userEmail, userName, activity, notes, location, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!userId || !userEmail || !userName || !activity) {
       return NextResponse.json(
@@ -55,6 +60,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const adminEmail = searchParams.get('adminEmail');
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!userId) {
       return NextResponse.json(
@@ -94,7 +104,11 @@ export async function GET(request: NextRequest) {
 // Clock out
 export async function PATCH(request: NextRequest) {
   try {
-    const { userId, notes } = await request.json();
+    const { userId, notes, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!userId) {
       return NextResponse.json(

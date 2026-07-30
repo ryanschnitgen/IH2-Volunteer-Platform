@@ -284,7 +284,9 @@ export default function VolunteerHours() {
                       {volunteerProfile ? `${volunteerProfile.lastName}, ${volunteerProfile.firstName}` : user?.displayName || user?.email}
                     </h1>
                     <p className="text-lg font-semibold text-gray-700 mb-4">
-                      Volunteer Hours Totals: {startDate ? new Date(startDate).toLocaleDateString('en-US') : '1/1/' + new Date().getFullYear()} - {endDate ? new Date(endDate).toLocaleDateString('en-US') : '12/31/' + new Date().getFullYear()}
+                      Volunteer Hours Totals: {startDate && endDate
+                        ? `${new Date(startDate).toLocaleDateString('en-US')} - ${new Date(endDate).toLocaleDateString('en-US')}`
+                        : 'All Time'}
                     </p>
                     <div className="text-gray-600 text-sm">
                       <p><strong>Organization:</strong> Inspired Hearts and Hands</p>

@@ -99,7 +99,7 @@ export default function LogHoursPage() {
     if (!user) return;
 
     try {
-      const response = await fetch(`/api/clock-in-out?userId=${user.uid}`);
+      const response = await fetch(`/api/clock-in-out?userId=${user.uid}&adminEmail=${encodeURIComponent(user.email || '')}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -130,6 +130,7 @@ export default function LogHoursPage() {
           userName: user.displayName || user.email,
           activity: clockInActivity,
           notes: clockInNotes,
+          adminEmail: user.email,
         }),
       });
 
@@ -140,6 +141,7 @@ export default function LogHoursPage() {
       }
 
       setClockSuccess("Clocked in successfully!");
+      setTimeout(() => setClockSuccess(""), 3000);
       setIsClockedIn(true);
       setActiveClockIn(data.clockIn);
       setClockInActivity("");
@@ -164,6 +166,7 @@ export default function LogHoursPage() {
         body: JSON.stringify({
           userId: user.uid,
           notes: clockOutNotes,
+          adminEmail: user.email,
         }),
       });
 
@@ -174,6 +177,7 @@ export default function LogHoursPage() {
       }
 
       setClockSuccess(`Clocked out successfully! Total time: ${data.hours} hours`);
+      setTimeout(() => setClockSuccess(""), 3000);
       setIsClockedIn(false);
       setActiveClockIn(null);
       setClockOutNotes("");

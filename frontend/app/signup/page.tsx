@@ -70,7 +70,7 @@ export default function Signup() {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      await fetch("/api/volunteers/profile", {
+      const profileRes = await fetch("/api/volunteers/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -88,6 +88,11 @@ export default function Signup() {
           canLiftHeavy,
         }),
       });
+
+      if (!profileRes.ok) {
+        const profileData = await profileRes.json();
+        throw new Error(profileData.error || "Failed to create profile");
+      }
 
       router.push("/waiver");
     } catch (err: any) {

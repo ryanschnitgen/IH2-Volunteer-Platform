@@ -3,6 +3,7 @@ import connectDB from '@backend/lib/db/mongodb';
 import Event from '@backend/lib/models/Event';
 import EventRegistration from '@backend/lib/models/EventRegistration';
 import { formatTime } from '@/lib/formatTime';
+import { sendEmail } from '@backend/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,13 +61,10 @@ export async function GET(request: NextRequest) {
       // Prepare email for each registration
       for (const registration of registrations) {
         const eventDate = new Date(event.date);
-        const emailPromise = fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: [registration.userEmail],
-            subject: `Reminder: ${event.title} Tomorrow`,
-            html: `
+        const emailPromise = sendEmail({
+          to: registration.userEmail,
+          subject: `Reminder: ${event.title} Tomorrow`,
+          html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: linear-gradient(135deg, #A7144C 0%, #8B1140 100%); padding: 30px; text-align: center;">
                   <h1 style="color: white; margin: 0; font-size: 28px;">Event Reminder</h1>
@@ -141,13 +139,12 @@ export async function GET(request: NextRequest) {
                 </div>
               </div>
             `,
-          }),
-        }).then(res => res.json()).then(async () => {
+        }).then(async () => {
           await EventRegistration.findByIdAndUpdate(registration._id, { reminderSentAt: new Date() });
+          totalRemindersSent++;
         });
 
         emailPromises.push(emailPromise);
-        totalRemindersSent++;
       }
     }
 

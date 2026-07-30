@@ -4,11 +4,16 @@ import CheckIn from '@backend/lib/models/CheckIn';
 import Event from '@backend/lib/models/Event';
 import EventRegistration from '@backend/lib/models/EventRegistration';
 import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
+import { isAdmin } from '@backend/lib/admin';
 
 // POST - Manually assign check-in to an event
 export async function POST(request: NextRequest) {
   try {
-    const { checkInId, eventId } = await request.json();
+    const { checkInId, eventId, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!checkInId || !eventId) {
       return NextResponse.json(

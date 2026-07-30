@@ -21,24 +21,26 @@ export async function POST(request: Request) {
       waiverAccepted: true,
       waiverAcceptedDate: new Date(),
       waiverAcceptedIP: ip,
-      linkedUserId: userId,
       lastUpdated: new Date(),
     };
 
     // Try to find profile by linkedUserId first (email signup or previously linked)
     let profile = await VolunteerProfile.findOneAndUpdate(
       { linkedUserId: userId },
-      { $set: waiverFields },
+      { $set: { ...waiverFields, linkedUserId: userId } },
       { new: true }
     );
 
-    // Fallback: find by email (covers Google users whose profile was linked on login)
+    // Fallback: find by email — only set linkedUserId if the profile isn't already linked elsewhere
     if (!profile) {
       profile = await VolunteerProfile.findOneAndUpdate(
         { email: normalizedEmail },
         { $set: waiverFields },
         { new: true }
       );
+      if (profile && !profile.linkedUserId) {
+        await VolunteerProfile.findByIdAndUpdate(profile._id, { $set: { linkedUserId: userId } });
+      }
     }
 
     // Still not found: Google signup with no existing profile — create one

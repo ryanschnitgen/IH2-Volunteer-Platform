@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import Event from '@backend/lib/models/Event';
 import EventRegistration from '@backend/lib/models/EventRegistration';
+import HoursLog from '@backend/lib/models/HoursLog';
 import { isAdmin } from '@backend/lib/admin';
 
 // Get all events
@@ -214,7 +215,7 @@ export async function DELETE(request: NextRequest) {
 
     await connectDB();
 
-    const event = await Event.findByIdAndDelete(eventId);
+    const event = await Event.findById(eventId);
 
     if (!event) {
       return NextResponse.json(
@@ -223,8 +224,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Cascade-delete all registrations for this event
-    await EventRegistration.deleteMany({ eventId });
+    // Cascade-delete dependent records before removing the event
+    await Promise.all([
+      EventRegistration.deleteMany({ eventId }),
+      HoursLog.deleteMany({ eventId }),
+    ]);
+
+    await Event.findByIdAndDelete(eventId);
 
     return NextResponse.json({ deleted: true });
   } catch (error: any) {

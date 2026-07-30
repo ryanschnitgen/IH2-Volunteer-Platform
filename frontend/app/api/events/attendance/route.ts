@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import EventRegistration from '@backend/lib/models/EventRegistration';
+import { isAdmin } from '@backend/lib/admin';
 
 // Mark attendance and record hours for an event registration
 export async function PATCH(request: NextRequest) {
   try {
-    const { registrationId, attended, hoursCompleted } = await request.json();
+    const { registrationId, attended, hoursCompleted, adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     if (!registrationId) {
       return NextResponse.json(

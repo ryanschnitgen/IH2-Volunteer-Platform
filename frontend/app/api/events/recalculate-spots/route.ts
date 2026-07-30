@@ -2,10 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@backend/lib/db/mongodb';
 import Event from '@backend/lib/models/Event';
 import EventRegistration from '@backend/lib/models/EventRegistration';
+import { isAdmin } from '@backend/lib/admin';
 
 // Recalculate spots remaining for all events
 export async function POST(request: NextRequest) {
   try {
+    const { adminEmail } = await request.json();
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     await connectDB();
 
     const events = await Event.find({});

@@ -86,14 +86,13 @@ export default function Opportunities() {
 
   useEffect(() => {
     if (user) {
-      loadOpportunities();
-      loadRegistrations();
+      setLoading(true);
+      Promise.all([loadOpportunities(), loadRegistrations()]).finally(() => setLoading(false));
     }
   }, [user]);
 
   const loadOpportunities = async () => {
     try {
-      setLoading(true);
       const response = await fetch("/api/events?status=active");
       const data = await response.json();
 
@@ -104,8 +103,6 @@ export default function Opportunities() {
       setOpportunities(data.events);
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 

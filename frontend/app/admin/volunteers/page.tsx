@@ -714,7 +714,7 @@ export default function AdminVolunteersPage() {
                       <div>
                         <span className="font-medium text-gray-700">Platform Hours:</span>
                         <span className="ml-2 text-blue-600 font-semibold">
-                          {hoursLogs.filter(l => !l.pendingApproval).reduce((sum: number, log: any) => sum + log.hours, 0).toFixed(2)} hrs
+                          {hoursLogs.filter(l => !l.pendingApproval && !l.autoAssigned).reduce((sum: number, log: any) => sum + log.hours, 0).toFixed(2)} hrs
                         </span>
                         <span className="ml-1 text-xs text-gray-500">(approved)</span>
                       </div>

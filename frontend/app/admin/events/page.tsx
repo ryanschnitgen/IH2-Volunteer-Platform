@@ -133,6 +133,7 @@ export default function AdminEventsPage() {
   const viewRegistrations = async (event: Event) => {
     setSelectedEventForRegistrations(event);
     setShowRegistrationsModal(true);
+    setRegistrations([]);
     setLoadingRegistrations(true);
 
     try {
@@ -275,7 +276,6 @@ export default function AdminEventsPage() {
 
     try {
       if (!user) {
-        console.error('No user found - cannot create event');
         setError('You must be logged in to create events');
         return;
       }
@@ -314,9 +314,6 @@ export default function AdminEventsPage() {
 
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
-      console.error('=== CLIENT: ERROR ===');
-      console.error('Error:', err);
-      console.error('Error message:', err.message);
       setError(err.message);
     }
   };
@@ -351,7 +348,7 @@ export default function AdminEventsPage() {
       // Check if there are registrations
       const regResponse = await fetch(`/api/events/registrations/all?adminEmail=${encodeURIComponent(user?.email || '')}`);
       const regData = await regResponse.json();
-      const registrations = regData.registrations?.filter((r: any) => r.eventId === eventToDelete._id) || [];
+      const registrations = regData.registrations?.filter((r: any) => r.eventId === eventToDelete._id && !r.cancelled) || [];
 
       if (!regResponse.ok) {
         console.warn('Failed to fetch registrations for delete notification — proceeding without email alerts');
@@ -1386,6 +1383,7 @@ export default function AdminEventsPage() {
                   setSelectedEventForRegistrations(null);
                   setRegistrations([]);
                   setShowAddUserForm(false);
+                  setAddUserEmail("");
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >

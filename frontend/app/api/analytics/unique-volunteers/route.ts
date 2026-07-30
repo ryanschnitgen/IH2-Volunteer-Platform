@@ -2,15 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@backend/lib/db/mongodb';
 import HoursLog from '@backend/lib/models/HoursLog';
 import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
+import { isAdmin } from '@backend/lib/admin';
 
 // 93% of guests are assumed to be unique volunteers
 const GUEST_UNIQUENESS_RATE = 0.93;
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const adminEmail = searchParams.get('adminEmail');
+
+    if (!isAdmin(adminEmail)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     await dbConnect();
 
-    const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
