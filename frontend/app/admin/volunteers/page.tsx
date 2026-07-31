@@ -418,8 +418,17 @@ export default function AdminVolunteersPage() {
     return null;
   }
 
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
+
   const handleExportCSV = () => {
     window.open(`/api/admin/export-csv?adminEmail=${encodeURIComponent(user?.email || '')}`, '_blank');
+  };
+
+  const handleYearlyReport = () => {
+    window.open(
+      `/api/admin/yearly-report?adminEmail=${encodeURIComponent(user?.email || '')}&year=${reportYear}`,
+      '_blank'
+    );
   };
 
   return (
@@ -434,15 +443,40 @@ export default function AdminVolunteersPage() {
               View and manage all volunteer profiles ({volunteers.length} total)
             </p>
           </div>
-          <button
-            onClick={handleExportCSV}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Export to CSV
-          </button>
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            {/* Yearly report */}
+            <div className="flex items-center gap-2">
+              <select
+                value={reportYear}
+                onChange={e => setReportYear(parseInt(e.target.value))}
+                className="px-3 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleYearlyReport}
+                className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-3 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Yearly Report
+              </button>
+            </div>
+
+            {/* All-time export */}
+            <button
+              onClick={handleExportCSV}
+              className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export All-Time CSV
+            </button>
+          </div>
         </div>
 
         {error && (
