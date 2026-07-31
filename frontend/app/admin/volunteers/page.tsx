@@ -49,6 +49,7 @@ export default function AdminVolunteersPage() {
 
   const [volunteerHourTotals, setVolunteerHourTotals] = useState<Record<string, { approved: number; pending: number }>>({});
   const [approvingHourId, setApprovingHourId] = useState<string | null>(null);
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
 
   // Confirm modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -417,8 +418,6 @@ export default function AdminVolunteersPage() {
   if (!user || !isAdmin(user.email)) {
     return null;
   }
-
-  const [reportYear, setReportYear] = useState(new Date().getFullYear());
 
   const handleExportCSV = () => {
     window.open(`/api/admin/export-csv?adminEmail=${encodeURIComponent(user?.email || '')}`, '_blank');
