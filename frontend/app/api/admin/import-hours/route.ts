@@ -116,9 +116,10 @@ export async function POST(request: NextRequest) {
 
         // Fall back to name matching if username not found
         if (!volunteer) {
+          const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           volunteer = await VolunteerProfile.findOne({
-            firstName: { $regex: new RegExp(`^${firstName}$`, 'i') },
-            lastName: { $regex: new RegExp(`^${lastName}$`, 'i') },
+            firstName: { $regex: new RegExp(`^${escapeRegex(firstName)}$`, 'i') },
+            lastName: { $regex: new RegExp(`^${escapeRegex(lastName)}$`, 'i') },
           });
         }
 
