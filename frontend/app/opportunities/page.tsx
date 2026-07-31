@@ -298,6 +298,7 @@ export default function Opportunities() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: user?.uid,
           additionalAttendees: isGroupRegistration ? additionalAttendees : 0,
           attendeeNames: isGroupRegistration && !isGroupCheckIn ? attendeeNames : [],
           isGroupCheckIn: isGroupRegistration ? isGroupCheckIn : false,

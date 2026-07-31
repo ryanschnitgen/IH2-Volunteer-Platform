@@ -9,8 +9,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { additionalAttendees, attendeeNames, isGroupCheckIn } = await request.json();
+    const { userId, additionalAttendees, attendeeNames, isGroupCheckIn } = await request.json();
     const { id: registrationId } = await params;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     await connectDB();
 
@@ -21,6 +25,11 @@ export async function PATCH(
         { error: 'Registration not found' },
         { status: 404 }
       );
+    }
+
+    // Verify the requester owns this registration
+    if (registration.userId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Calculate the difference in attendees
