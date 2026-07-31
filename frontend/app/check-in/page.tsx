@@ -36,7 +36,9 @@ export default function VolunteerCheckIn() {
   const [selectedRegId, setSelectedRegId] = useState("");
 
   // Form fields (manual form or pre-filled from selection)
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [name, setName] = useState(""); // pre-filled from dropdown selection
   const [email, setEmail] = useState("");
   const [hasGuests, setHasGuests] = useState<boolean | null>(null);
   const [guestCount, setGuestCount] = useState(0);
@@ -128,14 +130,16 @@ export default function VolunteerCheckIn() {
   function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!name.trim()) { setError("Please enter your name"); return; }
+    if (!firstName.trim()) { setError("Please enter your first name"); return; }
+    if (!lastName.trim()) { setError("Please enter your last name"); return; }
     if (!email.trim()) { setError("Please enter your email"); return; }
     if (hasGuests === null) { setError("Please select whether you brought guests"); return; }
+    setName(`${firstName.trim()} ${lastName.trim()}`);
     if (hasGuests) {
       setGuestCount(0);
       setMode("guest-count");
     } else {
-      handleFinalSubmit();
+      handleFinalSubmit(`${firstName.trim()} ${lastName.trim()}`);
     }
   }
 
@@ -143,19 +147,23 @@ export default function VolunteerCheckIn() {
     e.preventDefault();
     setError("");
     if (guestCount < 1) { setError("Please enter at least 1 guest"); return; }
-    handleFinalSubmit();
+    const effectiveName = firstName.trim() && lastName.trim()
+      ? `${firstName.trim()} ${lastName.trim()}`
+      : name;
+    handleFinalSubmit(effectiveName);
   }
 
-  async function handleFinalSubmit() {
+  async function handleFinalSubmit(nameOverride?: string) {
     setLoading(true);
     setError("");
+    const effectiveName = nameOverride || name;
 
     try {
       const res = await fetch("/api/check-ins/volunteer-signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: name.trim(),
+          name: effectiveName.trim(),
           email: email.trim().toLowerCase(),
           hasGuests: hasGuests || false,
           guestCount: hasGuests ? guestCount : 0,
@@ -169,10 +177,13 @@ export default function VolunteerCheckIn() {
 
       setCheckedInEvents(data.eventTitles || []);
       setAutoMatched(data.autoMatched || false);
+      setName(effectiveName);
       setMode("success");
 
       // Reset after 5 seconds for next volunteer
       setTimeout(() => {
+        setFirstName("");
+        setLastName("");
         setName("");
         setEmail("");
         setHasGuests(null);
@@ -193,6 +204,8 @@ export default function VolunteerCheckIn() {
   }
 
   function goToManual() {
+    setFirstName("");
+    setLastName("");
     setName("");
     setEmail("");
     setHasGuests(null);
@@ -424,19 +437,35 @@ export default function VolunteerCheckIn() {
         {/* ── Step: Manual form (walk-ins / no event listed) ── */}
         {mode === "manual" && (
           <form onSubmit={handleManualSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Full name
-              </label>
-              <input
-                id="name"
-                type="text"
-                required
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="w-full px-3.5 py-3 border border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                placeholder="Your full name"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  First name
+                </label>
+                <input
+                  id="firstName"
+                  type="text"
+                  required
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
+                  className="w-full px-3.5 py-3 border border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  placeholder="First"
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Last name
+                </label>
+                <input
+                  id="lastName"
+                  type="text"
+                  required
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                  className="w-full px-3.5 py-3 border border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  placeholder="Last"
+                />
+              </div>
             </div>
 
             <div>

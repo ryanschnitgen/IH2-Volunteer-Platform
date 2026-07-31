@@ -50,10 +50,18 @@ interface ActiveEvent {
   timeUntilStart: number;
 }
 
-// Returns all events currently within the check-in window (30 min before start to 30 min after end)
+// Returns all non-cancelled events scheduled for the same calendar day as checkInTime
 async function findActiveEvents(checkInTime: Date): Promise<ActiveEvent[]> {
   const now = checkInTime;
-  const events = await Event.find({ status: { $ne: 'cancelled' } });
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(now);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const events = await Event.find({
+    status: { $ne: 'cancelled' },
+    date: { $gte: dayStart, $lte: dayEnd },
+  });
   const active: ActiveEvent[] = [];
 
   for (const event of events) {
@@ -67,22 +75,16 @@ async function findActiveEvents(checkInTime: Date): Promise<ActiveEvent[]> {
     const eventEnd = new Date(eventDate);
     eventEnd.setHours(endHour, endMin, 0, 0);
 
-    const windowStart = new Date(eventStart.getTime() - 30 * 60 * 1000);
-    const windowEnd = new Date(eventEnd.getTime() + 30 * 60 * 1000);
-
-    if (now >= windowStart && now <= windowEnd) {
-      active.push({
-        event,
-        eventStart,
-        eventEnd,
-        hasStarted: now >= eventStart,
-        hasEnded: now > eventEnd,
-        timeUntilStart: eventStart.getTime() - now.getTime(),
-      });
-    }
+    active.push({
+      event,
+      eventStart,
+      eventEnd,
+      hasStarted: now >= eventStart,
+      hasEnded: now > eventEnd,
+      timeUntilStart: eventStart.getTime() - now.getTime(),
+    });
   }
 
-  // Sort by start time ascending
   active.sort((a, b) => a.eventStart.getTime() - b.eventStart.getTime());
   return active;
 }
