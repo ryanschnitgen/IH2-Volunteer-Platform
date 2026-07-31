@@ -37,6 +37,10 @@ function normalizeName(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 interface ActiveEvent {
   event: any;
   eventStart: Date;
@@ -109,19 +113,28 @@ async function checkInToEvent(
   normalizedEmail: string,
   name: string,
   totalAttendees: number,
-  timestamp: string
+  timestamp: string,
+  existingRegistrationId?: string
 ) {
-  const effectiveUserId = volunteer.linkedUserId || `walkin-${volunteer._id.toString()}`;
+  const effectiveUserId = volunteer?.linkedUserId || (volunteer ? `walkin-${volunteer._id.toString()}` : `walkin-${Date.now()}`);
 
-  const checkInOrConditions: any[] = [{ userEmail: normalizedEmail }];
-  if (volunteer.linkedUserId) {
-    checkInOrConditions.push({ userId: volunteer.linkedUserId });
+  let registration: any = null;
+
+  if (existingRegistrationId) {
+    registration = await EventRegistration.findById(existingRegistrationId);
   }
-  let registration = await EventRegistration.findOne({
-    eventId: event._id,
-    $or: checkInOrConditions,
-    cancelled: { $ne: true }
-  });
+
+  if (!registration) {
+    const checkInOrConditions: any[] = [{ userEmail: normalizedEmail }];
+    if (volunteer?.linkedUserId) {
+      checkInOrConditions.push({ userId: volunteer.linkedUserId });
+    }
+    registration = await EventRegistration.findOne({
+      eventId: event._id,
+      $or: checkInOrConditions,
+      cancelled: { $ne: true }
+    });
+  }
 
   if (registration) {
     registration.checkedIn = true;
@@ -169,38 +182,162 @@ export async function POST(request: NextRequest) {
     // Find all events currently in their check-in window
     const activeEvents = await findActiveEvents(checkInTime);
 
-    // Resolve volunteer profile
-    let volunteer = await VolunteerProfile.findOne({ email: normalizedEmail });
-    let matchType = 'email';
+    let volunteer: any = null;
+    let matchType = '';
     let isNewVolunteer = false;
+    let eventsToCheckIn: Array<{ event: any; registrationId?: string }> = [];
+    let autoMatched = false;
 
-    if (!volunteer) {
-      const nameParts = name.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      volunteer = await VolunteerProfile.findOne({
-        firstName: { $regex: new RegExp(`^${firstName}$`, 'i') },
-        lastName: { $regex: new RegExp(`^${lastName}$`, 'i') },
-      });
-      if (volunteer) matchType = 'exact-name';
-    }
+    // PRIORITY 1: Match against registrations for active events
+    if (activeEvents.length > 0) {
+      const eventIds = activeEvents.map(ae => ae.event._id);
+      const allActiveRegs = await EventRegistration.find({
+        eventId: { $in: eventIds },
+        cancelled: { $ne: true },
+      }).lean();
 
-    if (!volunteer) {
-      const allVolunteers = await VolunteerProfile.find({});
-      let bestMatch: any = null;
-      let bestScore = 0;
-      const THRESHOLD = 80;
-      for (const v of allVolunteers) {
-        const score = nameSimilarity(normalizedName, normalizeName(`${v.firstName} ${v.lastName}`));
-        if (score > bestScore && score >= THRESHOLD) {
-          bestScore = score;
-          bestMatch = v;
+      // Group registrations by eventId for quick lookup
+      const regsByEvent = new Map<string, any[]>();
+      for (const reg of allActiveRegs) {
+        const key = reg.eventId.toString();
+        if (!regsByEvent.has(key)) regsByEvent.set(key, []);
+        regsByEvent.get(key)!.push(reg);
+      }
+
+      // Find all registrations matching this check-in person
+      // Step 1: email match across all active registrations
+      const emailMatched = allActiveRegs.filter(
+        r => r.userEmail?.toLowerCase() === normalizedEmail
+      );
+
+      // Step 2: name match (exact then fuzzy) if no email match
+      let nameMatched: any[] = [];
+      if (emailMatched.length === 0) {
+        const exactNameMatched = allActiveRegs.filter(r => {
+          return normalizeName(r.userName || '') === normalizedName;
+        });
+        if (exactNameMatched.length > 0) {
+          nameMatched = exactNameMatched;
+        } else {
+          const THRESHOLD = 80;
+          const fuzzyMatched = allActiveRegs.filter(r => {
+            return nameSimilarity(normalizedName, normalizeName(r.userName || '')) >= THRESHOLD;
+          });
+          nameMatched = fuzzyMatched;
         }
       }
-      if (bestMatch) {
-        volunteer = bestMatch;
-        matchType = 'fuzzy-name';
+
+      const matchedRegs = emailMatched.length > 0 ? emailMatched : nameMatched;
+
+      if (matchedRegs.length > 0) {
+        matchType = emailMatched.length > 0 ? 'email-registration' : 'name-registration';
+
+        // Resolve volunteer profile from the first matched registration
+        const firstReg = matchedRegs[0];
+        if (firstReg.userId && !firstReg.userId.startsWith('walkin-')) {
+          volunteer = await VolunteerProfile.findOne({ linkedUserId: firstReg.userId });
+        }
+        if (!volunteer && firstReg.userEmail) {
+          volunteer = await VolunteerProfile.findOne({ email: firstReg.userEmail.toLowerCase() });
+        }
+
+        // Map matched registrations to their events
+        for (const reg of matchedRegs) {
+          const eventId = reg.eventId.toString();
+          const ae = activeEvents.find(a => a.event._id.toString() === eventId);
+          if (ae) {
+            eventsToCheckIn.push({ event: ae.event, registrationId: reg._id.toString() });
+          }
+        }
       }
+    }
+
+    // PRIORITY 2: Fall back to full VolunteerProfile lookup if no registration match
+    if (eventsToCheckIn.length === 0) {
+      volunteer = await VolunteerProfile.findOne({ email: normalizedEmail });
+      if (volunteer) matchType = 'email';
+
+      if (!volunteer) {
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        volunteer = await VolunteerProfile.findOne({
+          firstName: { $regex: new RegExp(`^${escapeRegex(firstName)}$`, 'i') },
+          lastName: { $regex: new RegExp(`^${escapeRegex(lastName)}$`, 'i') },
+        });
+        if (volunteer) matchType = 'exact-name';
+      }
+
+      if (!volunteer) {
+        const allVolunteers = await VolunteerProfile.find({});
+        let bestMatch: any = null;
+        let bestScore = 0;
+        const THRESHOLD = 80;
+        for (const v of allVolunteers) {
+          const score = nameSimilarity(normalizedName, normalizeName(`${v.firstName} ${v.lastName}`));
+          if (score > bestScore && score >= THRESHOLD) {
+            bestScore = score;
+            bestMatch = v;
+          }
+        }
+        if (bestMatch) {
+          volunteer = bestMatch;
+          matchType = 'fuzzy-name';
+        }
+      }
+
+      if (!volunteer) {
+        const nameParts = name.trim().split(' ');
+        volunteer = await VolunteerProfile.create({
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          email: normalizedEmail,
+          createdAt: new Date(),
+        });
+        matchType = 'new';
+        isNewVolunteer = true;
+      }
+
+      // Now check if this volunteer is registered for any active events
+      if (activeEvents.length > 0) {
+        const orConditions: any[] = [{ userEmail: normalizedEmail }];
+        if (volunteer.linkedUserId) {
+          orConditions.push({ userId: volunteer.linkedUserId });
+        }
+
+        const registeredMatches = await EventRegistration.find({
+          eventId: { $in: activeEvents.map(ae => ae.event._id) },
+          $or: orConditions,
+          cancelled: { $ne: true },
+        }).lean();
+
+        if (registeredMatches.length > 0) {
+          for (const reg of registeredMatches) {
+            const ae = activeEvents.find(a => a.event._id.toString() === reg.eventId.toString());
+            if (ae) eventsToCheckIn.push({ event: ae.event, registrationId: reg._id.toString() });
+          }
+        } else {
+          // Walk-in: apply back-to-back selection rule
+          const best = selectBestEvent(activeEvents, checkInTime);
+          if (best) {
+            eventsToCheckIn = [{ event: best.event }];
+            autoMatched = true;
+          }
+        }
+      }
+    }
+
+    // If we matched via registration but still have no volunteer profile, create one
+    if (!volunteer && eventsToCheckIn.length > 0) {
+      const nameParts = name.trim().split(' ');
+      volunteer = await VolunteerProfile.create({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: normalizedEmail,
+        createdAt: new Date(),
+      });
+      matchType = matchType || 'new';
+      isNewVolunteer = true;
     }
 
     if (!volunteer) {
@@ -215,46 +352,12 @@ export async function POST(request: NextRequest) {
       isNewVolunteer = true;
     }
 
-    // Determine which events to check into
-    let eventsToCheckIn: any[] = [];
-    let autoMatched = false;
-
-    if (activeEvents.length > 0) {
-      // Check which active events this volunteer is registered for
-      const registeredEvents = await Promise.all(
-        activeEvents.map(async ({ event }) => {
-          const orConditions: any[] = [{ userEmail: normalizedEmail }];
-          if (volunteer.linkedUserId) {
-            orConditions.push({ userId: volunteer.linkedUserId });
-          }
-          const reg = await EventRegistration.findOne({
-            eventId: event._id,
-            $or: orConditions,
-            cancelled: { $ne: true },
-          });
-          return reg ? event : null;
-        })
-      );
-      const matchedRegistered = registeredEvents.filter(Boolean);
-
-      if (matchedRegistered.length > 0) {
-        // Check into every event they're registered for
-        eventsToCheckIn = matchedRegistered;
-      } else {
-        // Walk-in: apply back-to-back selection rule
-        const best = selectBestEvent(activeEvents, checkInTime);
-        if (best) {
-          eventsToCheckIn = [best.event];
-          autoMatched = true;
-        }
-      }
-    }
-
     // Perform check-ins
-    for (const event of eventsToCheckIn) {
+    for (const { event, registrationId } of eventsToCheckIn) {
       await checkInToEvent(
         event, volunteer, normalizedEmail, name,
-        totalAttendees, timestamp || new Date().toISOString()
+        totalAttendees, timestamp || new Date().toISOString(),
+        registrationId
       );
     }
 
@@ -270,8 +373,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const estimatedHours = eventsToCheckIn.reduce((sum: number, e: any) => sum + calcEventHours(e), 0);
-    const eventTitles = eventsToCheckIn.map((e: any) => e.title);
+    const events = eventsToCheckIn.map(e => e.event);
+    const estimatedHours = events.reduce((sum: number, e: any) => sum + calcEventHours(e), 0);
+    const eventTitles = events.map((e: any) => e.title);
     const hasLinkedAccount = !!volunteer.linkedUserId;
 
     if (estimatedHours > 0) {
@@ -282,11 +386,11 @@ export async function POST(request: NextRequest) {
         userName: name,
         email: normalizedEmail,
         date: checkInTime,
-        eventId: eventsToCheckIn[0]?._id,
+        eventId: events[0]?._id,
         eventTitle: eventTitles.join(' + ') || undefined,
-        category: eventsToCheckIn.length > 0 ? 'Event Check-In' : 'Check-In',
-        description: eventsToCheckIn.length > 0
-          ? `Event${eventsToCheckIn.length > 1 ? 's' : ''}: ${eventTitles.join(' + ')}${hasGuests ? ` (with ${actualGuestCount} guest${actualGuestCount > 1 ? 's' : ''})` : ''}`
+        category: events.length > 0 ? 'Event Check-In' : 'Check-In',
+        description: events.length > 0
+          ? `Event${events.length > 1 ? 's' : ''}: ${eventTitles.join(' + ')}${hasGuests ? ` (with ${actualGuestCount} guest${actualGuestCount > 1 ? 's' : ''})` : ''}`
           : hasGuests
           ? `Check-in with ${actualGuestCount} guest${actualGuestCount > 1 ? 's' : ''} (${totalAttendees} total people)`
           : 'Check-in (individual)',
@@ -295,17 +399,16 @@ export async function POST(request: NextRequest) {
         totalAttendees,
         hasGuests: hasGuests || false,
         hours: estimatedHours,
-        // Pending approval for linked accounts with event hours; walk-ins tracked as-is
         pendingApproval: hasLinkedAccount && estimatedHours > 0,
         source: 'Universal Check-In',
         matchType,
       });
     }
 
-    const responseMessage = eventsToCheckIn.length > 1
-      ? `Checked in for ${eventsToCheckIn.length} events`
-      : eventsToCheckIn.length === 1
-      ? `Checked in for ${eventsToCheckIn[0].title}`
+    const responseMessage = events.length > 1
+      ? `Checked in for ${events.length} events`
+      : events.length === 1
+      ? `Checked in for ${events[0].title}`
       : 'Check-in recorded — no active events found';
 
     return NextResponse.json({

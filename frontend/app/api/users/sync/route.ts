@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@backend/lib/db/mongodb';
 import User from '@backend/lib/models/User';
+import VolunteerProfile from '@backend/lib/models/VolunteerProfile';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,14 +13,22 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     await User.findOneAndUpdate(
       { firebaseUid },
       {
         firebaseUid,
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         displayName: displayName || email.split('@')[0],
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Auto-link existing VolunteerProfile to this account if not already linked
+    await VolunteerProfile.findOneAndUpdate(
+      { email: normalizedEmail, linkedUserId: { $exists: false } },
+      { $set: { linkedUserId: firebaseUid } }
     );
 
     return NextResponse.json({ success: true });
