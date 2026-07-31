@@ -299,22 +299,40 @@ END:VCALENDAR`;
     return null;
   }
 
-  // Filter and sort registrations by event date
-  const now = new Date();
-  now.setHours(0, 0, 0, 0); // start of today in local time
+  // Filter and sort registrations — compare against the event's actual end time (local)
+  const now = new Date(); // current moment
 
-  const parseEventDate = (dateStr: string) => {
-    const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
-    return new Date(y, m - 1, d); // local midnight — avoids UTC offset shifting the day
+  const getEventEnd = (reg: ScheduledEvent): Date => {
+    const [y, m, d] = reg.eventDate.split('T')[0].split('-').map(Number);
+    const end = new Date(y, m - 1, d);
+    const details = eventDetails[reg.eventId];
+    if (details?.endTime) {
+      const [h, min] = details.endTime.split(':').map(Number);
+      end.setHours(h, min, 0, 0);
+    } else {
+      end.setHours(23, 59, 59, 999); // no time data yet — treat as end of day
+    }
+    return end;
+  };
+
+  const getEventStart = (reg: ScheduledEvent): Date => {
+    const [y, m, d] = reg.eventDate.split('T')[0].split('-').map(Number);
+    const start = new Date(y, m - 1, d);
+    const details = eventDetails[reg.eventId];
+    if (details?.startTime) {
+      const [h, min] = details.startTime.split(':').map(Number);
+      start.setHours(h, min, 0, 0);
+    }
+    return start;
   };
 
   const upcomingRegistrations = registrations.filter((reg) => {
-    return parseEventDate(reg.eventDate) >= now && !reg.cancelled;
-  }).sort((a, b) => parseEventDate(a.eventDate).getTime() - parseEventDate(b.eventDate).getTime());
+    return getEventEnd(reg) >= now && !reg.cancelled;
+  }).sort((a, b) => getEventStart(a).getTime() - getEventStart(b).getTime());
 
   const pastRegistrations = registrations.filter((reg) => {
-    return parseEventDate(reg.eventDate) < now && !reg.cancelled;
-  }).sort((a, b) => parseEventDate(b.eventDate).getTime() - parseEventDate(a.eventDate).getTime());
+    return getEventEnd(reg) < now && !reg.cancelled;
+  }).sort((a, b) => getEventStart(b).getTime() - getEventStart(a).getTime());
 
   const displayedRegistrations = showPastEvents ? pastRegistrations : upcomingRegistrations;
 
