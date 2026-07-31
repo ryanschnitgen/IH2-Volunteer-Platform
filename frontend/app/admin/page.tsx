@@ -125,7 +125,7 @@ export default function AdminDashboard() {
             <p className="text-4xl font-bold text-primary-600 tabular-nums">
               {loadingStats ? <span className="text-gray-200 animate-pulse">—</span> : stats.totalUsers}
             </p>
-            <p className="text-sm text-gray-500 mt-1">registered volunteers</p>
+            <p className="text-sm text-gray-500 mt-1">users with accounts</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Active Events</p>

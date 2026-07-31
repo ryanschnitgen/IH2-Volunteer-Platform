@@ -88,18 +88,39 @@ function AdminEmailPanel() {
     setLoadingRecipients(true);
     try {
       if (filterType === "all") {
-        // Get all volunteers (prior platform + current)
-        const response = await fetch("/api/volunteers");
-        const data = await response.json();
+        // Union of VolunteerProfiles (includes legacy/prior-platform) + Firebase users (catches accounts without profiles)
+        const adminParam = encodeURIComponent(user?.email || '');
+        const [volRes, usersRes] = await Promise.all([
+          fetch(`/api/volunteers?adminEmail=${adminParam}`),
+          fetch(`/api/admin/users?adminEmail=${adminParam}`),
+        ]);
 
-        if (response.ok) {
-          const usersList: EmailRecipient[] = data.volunteers.map((vol: any) => ({
-            email: vol.email,
-            name: `${vol.firstName} ${vol.lastName}`,
-            selected: true,
-          }));
-          setRecipients(usersList);
+        const seenEmails = new Set<string>();
+        const usersList: EmailRecipient[] = [];
+
+        if (volRes.ok) {
+          const volData = await volRes.json();
+          for (const vol of (volData.volunteers || [])) {
+            const email = vol.email?.toLowerCase();
+            if (email && !seenEmails.has(email)) {
+              seenEmails.add(email);
+              usersList.push({ email: vol.email, name: `${vol.firstName} ${vol.lastName}`, selected: true });
+            }
+          }
         }
+
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          for (const u of (usersData.users || [])) {
+            const email = u.email?.toLowerCase();
+            if (email && !seenEmails.has(email)) {
+              seenEmails.add(email);
+              usersList.push({ email: u.email, name: u.displayName || u.email, selected: true });
+            }
+          }
+        }
+
+        setRecipients(usersList);
       } else if (filterType === "current") {
         // Get only current platform users (registered accounts)
         const response = await fetch(`/api/admin/users?adminEmail=${encodeURIComponent(user?.email || '')}`);
