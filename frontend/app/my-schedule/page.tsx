@@ -301,17 +301,20 @@ END:VCALENDAR`;
 
   // Filter and sort registrations by event date
   const now = new Date();
-  now.setHours(0, 0, 0, 0); // Set to start of day for comparison
+  now.setHours(0, 0, 0, 0); // start of today in local time
+
+  const parseEventDate = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+    return new Date(y, m - 1, d); // local midnight — avoids UTC offset shifting the day
+  };
 
   const upcomingRegistrations = registrations.filter((reg) => {
-    const eventDate = new Date(reg.eventDate);
-    return eventDate >= now && !reg.cancelled;
-  }).sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+    return parseEventDate(reg.eventDate) >= now && !reg.cancelled;
+  }).sort((a, b) => parseEventDate(a.eventDate).getTime() - parseEventDate(b.eventDate).getTime());
 
   const pastRegistrations = registrations.filter((reg) => {
-    const eventDate = new Date(reg.eventDate);
-    return eventDate < now && !reg.cancelled;
-  }).sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+    return parseEventDate(reg.eventDate) < now && !reg.cancelled;
+  }).sort((a, b) => parseEventDate(b.eventDate).getTime() - parseEventDate(a.eventDate).getTime());
 
   const displayedRegistrations = showPastEvents ? pastRegistrations : upcomingRegistrations;
 
