@@ -164,7 +164,7 @@ async function checkInToEvent(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, hasGuests, timestamp } = body;
+    const { name, email, hasGuests, timestamp, eventId } = body;
     const guestCount = parseInt(body.guestCount) || 0;
 
     if (!name || !email) {
@@ -180,7 +180,33 @@ export async function POST(request: NextRequest) {
     const actualGuestCount = hasGuests ? guestCount : 0;
 
     // Find all events currently in their check-in window
-    const activeEvents = await findActiveEvents(checkInTime);
+    let activeEvents = await findActiveEvents(checkInTime);
+
+    // If the kiosk passed a specific eventId (volunteer selected from dropdown),
+    // always include that event regardless of the time window
+    if (eventId) {
+      const alreadyIncluded = activeEvents.some(ae => ae.event._id.toString() === eventId);
+      if (!alreadyIncluded) {
+        const specificEvent = await Event.findById(eventId);
+        if (specificEvent && specificEvent.status !== 'cancelled') {
+          const eventDate = new Date(specificEvent.date);
+          const [startH, startM] = specificEvent.startTime.split(':').map(Number);
+          const [endH, endM] = specificEvent.endTime.split(':').map(Number);
+          const eventStart = new Date(eventDate);
+          eventStart.setHours(startH, startM, 0, 0);
+          const eventEnd = new Date(eventDate);
+          eventEnd.setHours(endH, endM, 0, 0);
+          activeEvents = [...activeEvents, {
+            event: specificEvent,
+            eventStart,
+            eventEnd,
+            hasStarted: checkInTime >= eventStart,
+            hasEnded: checkInTime > eventEnd,
+            timeUntilStart: eventStart.getTime() - checkInTime.getTime(),
+          }];
+        }
+      }
+    }
 
     let volunteer: any = null;
     let matchType = '';

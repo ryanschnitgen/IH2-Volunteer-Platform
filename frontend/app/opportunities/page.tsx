@@ -433,6 +433,11 @@ export default function Opportunities() {
     });
   };
 
+  const parseDateLocal = (dateString: string): Date => {
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       weekday: "long",
@@ -729,7 +734,7 @@ export default function Opportunities() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <span className="font-medium text-gray-800">
-                              {formatDate(new Date(opportunity.date))}
+                              {formatDate(parseDateLocal(opportunity.date))}
                             </span>
                           </p>
                           <p className="flex items-center gap-2">
@@ -843,7 +848,7 @@ export default function Opportunities() {
             {/* Event Details Summary */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-600 mb-2">
-                <strong>Date:</strong> {formatDate(new Date(selectedEvent.date))}
+                <strong>Date:</strong> {formatDate(parseDateLocal(selectedEvent.date))}
               </p>
               <p className="text-sm text-gray-600 mb-2">
                 <strong>Time:</strong> {formatTime(selectedEvent.startTime)} - {formatTime(selectedEvent.endTime)}
@@ -996,7 +1001,7 @@ export default function Opportunities() {
             {/* Event Details Summary */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-600 mb-2">
-                <strong>Date:</strong> {formatDate(new Date(selectedEvent.date))}
+                <strong>Date:</strong> {formatDate(parseDateLocal(selectedEvent.date))}
               </p>
               <p className="text-sm text-gray-600 mb-2">
                 <strong>Time:</strong> {formatTime(selectedEvent.startTime)} - {formatTime(selectedEvent.endTime)}

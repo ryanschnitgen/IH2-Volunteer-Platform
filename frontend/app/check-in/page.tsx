@@ -160,6 +160,7 @@ export default function VolunteerCheckIn() {
           hasGuests: hasGuests || false,
           guestCount: hasGuests ? guestCount : 0,
           timestamp: new Date().toISOString(),
+          eventId: selectedEventId || undefined,
         }),
       });
 
