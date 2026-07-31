@@ -150,7 +150,6 @@ async function autoAssignHours(registration: any, event: any) {
     });
 
     if (existing) {
-      console.log(`  → Hours already assigned for this event`);
       return;
     }
 
@@ -173,14 +172,11 @@ async function autoAssignHours(registration: any, event: any) {
       attended: true,
     });
 
-    console.log(`  ✓ Auto-assigned ${hoursToAssign} hours via QR check-in`);
-
     // Mark event as completed now that hours have been assigned (event has happened)
     if (event.status === 'active') {
       await Event.findByIdAndUpdate(event._id, {
         status: 'completed',
       });
-      console.log(`  ✓ Event marked as completed`);
     }
   } catch (error: any) {
     console.error(`  ✗ Error auto-assigning hours:`, error.message);
@@ -191,7 +187,6 @@ async function autoAssignHours(registration: any, event: any) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    console.log('📥 Webhook received:', data);
 
     const { name, email, eventTitle, timestamp } = data;
 
@@ -208,8 +203,9 @@ export async function POST(request: NextRequest) {
     let event;
     if (eventTitle) {
       // Try to find event by exact or partial title match
+      const escapedTitle = eventTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       event = await Event.findOne({
-        title: new RegExp(eventTitle, 'i'),
+        title: new RegExp(escapedTitle, 'i'),
         status: 'active',
       }).sort({ date: -1 });
     }
@@ -251,15 +247,11 @@ export async function POST(request: NextRequest) {
 
         // Find the event closest to the current time
         event = findClosestEvent(registeredEvents, checkInTime);
-        console.log(`✓ Matched to registered event: ${event.title} (user registered for ${userRegistrations.length} events)`);
       } else {
         // User not registered - pick the closest event by time
         event = findClosestEvent(eventsInWindow, checkInTime);
-        console.log(`✓ Matched to closest event: ${event.title} (user not pre-registered)`);
       }
     }
-
-    console.log(`✓ Check-in for event: ${event.title}`);
 
     // Check if CheckIn record already exists
     const existingCheckIn = await CheckIn.findOne({
@@ -274,7 +266,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingRegistration && existingRegistration.checkedIn && existingRegistration.hoursCompleted > 0) {
-      console.log(`→ Already processed: ${email} - registration has check-in and hours assigned`);
       return NextResponse.json({
         success: true,
         message: 'Already checked in and hours assigned',
@@ -282,8 +273,6 @@ export async function POST(request: NextRequest) {
         duplicate: true,
       });
     }
-
-    console.log(`Processing check-in for: ${email} (existing CheckIn: ${!!existingCheckIn}, existing registration: ${!!existingRegistration})`);
 
     // Find best match
     const match = await findBestMatch(event._id.toString(), name, email);
@@ -309,8 +298,6 @@ export async function POST(request: NextRequest) {
         checkInRecord.matchedRegistrationId = match.registration._id;
         checkInRecord.matchConfidence = match.score;
         checkInRecord.notes = `Auto-matched to ${match.registration.userName} (${match.registration.userEmail})`;
-
-        console.log(`✓ Matched to existing registration (${match.score}% confidence)`);
 
         // Automatically assign hours for QR check-in (use updated registration)
         if (updatedRegistration) {
@@ -340,14 +327,11 @@ export async function POST(request: NextRequest) {
         checkInRecord.matchConfidence = match.score;
         checkInRecord.notes = `Auto-created registration (${match.score}% confidence)`;
 
-        console.log(`✓ Created new registration (${match.score}% confidence)`);
-
         // Automatically assign hours for QR check-in
         await autoAssignHours(newRegistration, event);
       }
     } else {
       // Low confidence or no match - try exact email, then check guest names
-      console.log(`⚠ Low confidence match (${match?.score || 0}%) - trying exact email and guest name lookup`);
 
       // First try exact email match
       let exactEmailRegistration = await EventRegistration.findOne({
@@ -377,14 +361,11 @@ export async function POST(request: NextRequest) {
           checkInRecord.notes = `Matched by exact email: ${email}`;
         }
 
-        console.log(`✓ Matched by exact email: ${email}`);
-
         if (updatedRegistration) {
           await autoAssignHours(updatedRegistration, event);
         }
       } else {
         // No match found - create new registration and volunteer profile
-        console.log(`→ No match found - creating new walk-in registration for ${name} (${email})`);
 
         // Parse name into first/last
         const nameParts = name.trim().split(/\s+/);
@@ -395,7 +376,6 @@ export async function POST(request: NextRequest) {
         let profile = await VolunteerProfile.findOne({ email: email.toLowerCase().trim() });
 
         if (!profile) {
-          console.log(`  → Creating new volunteer profile for ${email}`);
           profile = await VolunteerProfile.create({
             firstName,
             lastName,
@@ -404,13 +384,9 @@ export async function POST(request: NextRequest) {
             importedAt: new Date(),
             lastUpdated: new Date(),
           });
-          console.log(`  ✓ Created volunteer profile`);
-        } else {
-          console.log(`  ✓ Found existing volunteer profile`);
         }
 
         // Create new registration
-        console.log(`  → Creating new event registration`);
         const newRegistration = await EventRegistration.create({
           eventId: event._id,
           userId: profile.linkedUserId || `walk-in-${email.toLowerCase().trim()}`,
@@ -426,8 +402,6 @@ export async function POST(request: NextRequest) {
           totalAttendees: 1,
         });
 
-        console.log(`  ✓ Created walk-in registration`);
-
         checkInRecord.matched = true;
         checkInRecord.matchedUserId = newRegistration.userId;
         checkInRecord.matchedRegistrationId = newRegistration._id;
@@ -436,18 +410,14 @@ export async function POST(request: NextRequest) {
 
         // Automatically assign hours for QR check-in
         await autoAssignHours(newRegistration, event);
-
-        console.log(`✓ Walk-in processed: ${name} added to ${event.title}`);
       }
     }
 
     // Create or update CheckIn record
     if (existingCheckIn) {
       await CheckIn.findByIdAndUpdate(existingCheckIn._id, checkInRecord);
-      console.log(`Updated existing CheckIn record`);
     } else {
       await CheckIn.create(checkInRecord);
-      console.log(`Created new CheckIn record`);
     }
 
     return NextResponse.json({

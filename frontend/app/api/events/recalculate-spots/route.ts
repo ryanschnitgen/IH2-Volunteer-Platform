@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
         spotsRemaining: Math.max(0, spotsRemaining),
       });
 
-      console.log(`${event.title}: ${spotsTaken} spots taken, ${spotsRemaining} remaining`);
       updated++;
     }
 

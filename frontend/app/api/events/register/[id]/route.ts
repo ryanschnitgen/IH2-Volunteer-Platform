@@ -12,20 +12,16 @@ export async function PATCH(
     const { additionalAttendees, attendeeNames, isGroupCheckIn } = await request.json();
     const { id: registrationId } = await params;
 
-    console.log('Updating registration:', registrationId);
     await connectDB();
 
     // Get the current registration
     const registration = await EventRegistration.findById(registrationId);
     if (!registration) {
-      console.error('Registration not found:', registrationId);
       return NextResponse.json(
         { error: 'Registration not found' },
         { status: 404 }
       );
     }
-
-    console.log('Found registration:', registration._id);
 
     // Calculate the difference in attendees
     const oldTotalAttendees = registration.totalAttendees || 1;

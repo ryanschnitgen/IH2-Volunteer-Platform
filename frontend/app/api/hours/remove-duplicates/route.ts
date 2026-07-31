@@ -48,10 +48,8 @@ export async function POST(request: NextRequest) {
         if (existing.pendingApproval && !log.pendingApproval) {
           duplicates.push(existing._id.toString());
           seen.set(key, log);
-          console.log(`  → Replaced pending with approved: ${log.eventTitle || log.notes || 'Manual entry'} on ${dateStr}`);
         } else {
           duplicates.push(log._id.toString());
-          console.log(`  → Found duplicate: ${log.eventTitle || log.notes || 'Manual entry'} on ${dateStr}`);
         }
       } else {
         // First occurrence - keep it
@@ -62,9 +60,6 @@ export async function POST(request: NextRequest) {
     // Delete duplicates
     if (duplicates.length > 0) {
       await HoursLog.deleteMany({ _id: { $in: duplicates } });
-      console.log(`✓ Removed ${duplicates.length} duplicate hours entries for user ${userId}`);
-    } else {
-      console.log(`✓ No duplicates found for user ${userId}`);
     }
 
     return NextResponse.json({

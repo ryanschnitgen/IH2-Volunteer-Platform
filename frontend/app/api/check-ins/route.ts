@@ -165,7 +165,6 @@ export async function POST(request: NextRequest) {
         });
 
         if (existing) {
-          console.log(`  → Skipping ${email} (already checked in)`);
           continue;
         }
 
@@ -193,7 +192,6 @@ export async function POST(request: NextRequest) {
             checkInRecord.matchConfidence = match.score;
             checkInRecord.notes = `Auto-matched to ${match.registration.userName} (${match.registration.userEmail})`;
 
-            console.log(`  ✓ Matched ${email} to registration (${match.score}% confidence)`);
             results.matched++;
           } else if (match.profile) {
             // Create new registration from profile (only if account is linked)
@@ -203,7 +201,6 @@ export async function POST(request: NextRequest) {
               checkInRecord.matched = false;
               checkInRecord.matchConfidence = match.score;
               checkInRecord.notes = `Profile found but no linked account (${match.score}% confidence)`;
-              console.log(`  ? No linked account for ${email} — stored for manual review`);
             } else {
               const event = await Event.findById(eventId);
 
@@ -228,7 +225,6 @@ export async function POST(request: NextRequest) {
                 checkInRecord.matchConfidence = match.score;
                 checkInRecord.notes = `Auto-created registration from profile (${match.score}% confidence)`;
 
-                console.log(`  ✓ Created registration for ${email} (${match.score}% confidence)`);
                 results.newRegistrations++;
               }
             }
@@ -241,7 +237,6 @@ export async function POST(request: NextRequest) {
             ? `Low confidence match (${match.score}%)`
             : 'No match found';
 
-          console.log(`  ? No match for ${email} (stored for manual review)`);
         }
 
         const savedCheckIn = await CheckIn.create(checkInRecord);
@@ -257,8 +252,6 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-
-    console.log(`Import complete: ${results.imported} imported, ${results.matched} matched, ${results.newRegistrations} new registrations`);
 
     return NextResponse.json({
       success: true,

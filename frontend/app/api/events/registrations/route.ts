@@ -20,20 +20,6 @@ export async function GET(request: NextRequest) {
 
     const registrations = await EventRegistration.find({ userId }).sort({ eventDate: 1 });
 
-    // Log registration data for debugging
-    console.log('Fetched registrations for user:', userId);
-    console.log('Number of registrations:', registrations.length);
-    if (registrations.length > 0) {
-      console.log('Sample registration data:', {
-        _id: registrations[0]._id,
-        totalAttendees: registrations[0].totalAttendees,
-        additionalAttendees: registrations[0].additionalAttendees,
-        attendeeNames: registrations[0].attendeeNames,
-        hasAttendeeNames: !!registrations[0].attendeeNames,
-        attendeeNamesLength: registrations[0].attendeeNames?.length || 0
-      });
-    }
-
     return NextResponse.json({ registrations });
   } catch (error: any) {
     return NextResponse.json(

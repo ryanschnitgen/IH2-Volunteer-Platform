@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
       if (hoursToAssign <= 0) hoursToAssign += 24;
     }
 
-    console.log(`Assigning ${hoursToAssign} hours for event: ${event.title}`);
 
     // First, handle registrations where people did NOT attend
     // Find registrations explicitly marked as not attended (attended: false) and not checked in
@@ -54,7 +53,6 @@ export async function POST(request: NextRequest) {
       checkedIn: { $ne: true }
     });
 
-    console.log(`Found ${noShowRegistrations.length} no-show registrations to remove`);
 
     // No-shows are left as-is (attended: false); they are only skipped from hour assignment
 
@@ -70,7 +68,6 @@ export async function POST(request: NextRequest) {
       ]
     });
 
-    console.log(`Found ${registrations.length} registrations (checked in or attended)`);
 
     const results = {
       assigned: 0,
@@ -96,7 +93,6 @@ export async function POST(request: NextRequest) {
         });
 
         if (approvedEntry) {
-          console.log(`  → Skipping ${registration.userEmail} (hours already approved for this event)`);
           results.skipped++;
           continue;
         }
@@ -115,7 +111,6 @@ export async function POST(request: NextRequest) {
         });
 
         if (existingOnDate && existingOnDate.eventId?.toString() !== eventId) {
-          console.log(`  → Skipping ${registration.userEmail} (already has hours for different event on this date)`);
           results.skipped++;
           continue;
         }
@@ -142,7 +137,6 @@ export async function POST(request: NextRequest) {
             pendingApproval: false,
             notes: noteText,
           });
-          console.log(`  ✓ Approved pending hours for ${registration.userEmail}`);
         } else {
           // Create hours log entry directly
           await HoursLog.create({
@@ -165,7 +159,6 @@ export async function POST(request: NextRequest) {
           attended: true,
         });
 
-        console.log(`  ✓ Assigned ${totalHoursToLog} hours to ${registration.userEmail}${isGroupCheckIn ? ` (${groupSize} people × ${hoursToAssign} hours)` : ''}`);
         results.assigned++;
 
       } catch (error: any) {
@@ -177,14 +170,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`Assignment complete: ${results.assigned} assigned, ${results.skipped} skipped, ${results.removed} removed (no-shows)`);
 
     // Mark event as completed if hours were assigned OR if the process ran (even with 0 attendees)
     if (event.status === 'active') {
       await Event.findByIdAndUpdate(eventId, {
         status: 'completed',
       });
-      console.log(`✓ Event marked as completed`);
     }
 
     return NextResponse.json({

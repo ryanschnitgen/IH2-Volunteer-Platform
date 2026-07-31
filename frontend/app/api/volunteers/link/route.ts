@@ -43,9 +43,6 @@ export async function POST(request: NextRequest) {
     profile.lastUpdated = new Date();
     await profile.save();
 
-    console.log(`✓ Linked volunteer profile for ${email} to user ${userId}`);
-    console.log(`  Lifetime hours: ${profile.lifetimeHours}`);
-
     return NextResponse.json({
       linked: true,
       profile: {

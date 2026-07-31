@@ -42,13 +42,11 @@ export async function GET(request: NextRequest) {
 // Create new event
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== EVENT CREATION STARTED ===');
     const eventData = await request.json();
 
     if (!isAdmin(eventData.adminEmail)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-    console.log('Received event data:', JSON.stringify(eventData, null, 2));
 
     const {
       title,
@@ -65,21 +63,6 @@ export async function POST(request: NextRequest) {
       organization = 'IH2',
     } = eventData;
 
-    console.log('Extracted fields:', {
-      title,
-      description,
-      eventType,
-      eventCategory,
-      location,
-      date,
-      startTime,
-      endTime,
-      spotsAvailable,
-      createdBy,
-      createdByName,
-      organization
-    });
-
     // Check each required field individually
     const missingFields = [];
     if (!title) missingFields.push('title');
@@ -95,16 +78,13 @@ export async function POST(request: NextRequest) {
     if (!createdByName) missingFields.push('createdByName');
 
     if (missingFields.length > 0) {
-      console.error('Missing required fields:', missingFields);
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       );
     }
 
-    console.log('Connecting to database...');
     await connectDB();
-    console.log('Database connected successfully');
 
     const eventToCreate = {
       title,
@@ -123,17 +103,10 @@ export async function POST(request: NextRequest) {
       status: 'active',
     };
 
-    console.log('Creating event with data:', JSON.stringify(eventToCreate, null, 2));
     const event = await Event.create(eventToCreate);
-    console.log('Event created successfully:', event._id);
 
     return NextResponse.json({ event, created: true });
   } catch (error: any) {
-    console.error('=== ERROR CREATING EVENT ===');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('Full error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to create event' },
       { status: 500 }

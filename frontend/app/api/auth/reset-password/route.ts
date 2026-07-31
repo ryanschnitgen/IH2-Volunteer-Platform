@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔐 Server-side password reset requested for:', email);
 
     // Use Firebase Admin SDK to generate password reset link
     // This bypasses client-side rate limiting and device fingerprinting
@@ -23,7 +22,6 @@ export async function POST(request: NextRequest) {
       handleCodeInApp: false,
     });
 
-    console.log('✅ Password reset link generated');
 
     // Send email via Resend
     const emailHtml = `
@@ -84,7 +82,6 @@ export async function POST(request: NextRequest) {
       replyTo: 'info@inspiredheartsandhands.com',
     });
 
-    console.log('✅ Password reset email sent successfully');
 
     return NextResponse.json({
       success: true,

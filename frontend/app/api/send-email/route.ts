@@ -29,8 +29,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📧 Attempting to send emails...');
-    console.log('✓ Using verified domain: inspiredheartsandhands.com');
 
     const recipients = Array.isArray(to) ? to : [to];
     const results = [];
@@ -39,7 +37,6 @@ export async function POST(request: NextRequest) {
     // Send emails individually to avoid rate limits and ensure delivery
     for (const recipient of recipients) {
       try {
-        console.log(`  → Sending to: ${recipient}`);
         const data = await resend.emails.send({
           from: from || 'IH2 Volunteer Portal <info@inspiredheartsandhands.com>',
           to: [recipient],
@@ -47,7 +44,6 @@ export async function POST(request: NextRequest) {
           html,
           replyTo: 'info@inspiredheartsandhands.com',
         });
-        console.log(`  ✓ Sent successfully to: ${recipient}`);
         results.push({ email: recipient, success: true, data });
       } catch (error: any) {
         console.error(`  ✗ Failed to send to ${recipient}:`, error.message);
@@ -56,7 +52,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`\n📊 Email Summary: ${results.length} sent, ${errors.length} failed`);
 
     // Return success if at least some emails were sent
     if (results.length > 0) {

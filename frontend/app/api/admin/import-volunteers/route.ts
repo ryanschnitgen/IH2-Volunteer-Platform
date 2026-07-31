@@ -79,7 +79,6 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    console.log(`Starting volunteer import: ${data.length} rows`);
 
     const results = {
       total: data.length,
@@ -138,9 +137,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`Processing ${volunteersData.length} volunteers from CSV`);
     if (results.skippedDetails.length > 0) {
-      console.log(`Skipped ${results.skippedDetails.length} rows:`, results.skippedDetails.slice(0, 10));
     }
 
     // Build matching criteria - match by email OR username
@@ -155,7 +152,6 @@ export async function POST(request: NextRequest) {
       ]
     }).select('email username _id').lean();
 
-    console.log(`Found ${volunteers.length} matching volunteers in database`);
 
     // Build maps of existing volunteers by email and username
     const existingByEmail = new Map();
@@ -238,10 +234,8 @@ export async function POST(request: NextRequest) {
 
     // Execute bulk update if there are operations
     if (bulkOps.length > 0) {
-      console.log(`Executing bulk update for ${bulkOps.length} volunteers`);
       const bulkResult = await VolunteerProfile.bulkWrite(bulkOps);
       results.updated = bulkResult.modifiedCount;
-      console.log(`Bulk update completed: ${results.matched} matched, ${results.updated} actually modified`);
     }
 
     // Create new volunteers not found in database
@@ -319,17 +313,11 @@ export async function POST(request: NextRequest) {
     // Bulk create new volunteers
     results.attemptedCreate = volunteersToCreate.length;
     if (volunteersToCreate.length > 0) {
-      console.log(`Attempting to create ${volunteersToCreate.length} new volunteers`);
-      console.log(`First volunteer to create:`, JSON.stringify(volunteersToCreate[0], null, 2));
 
       try {
         const createResult = await VolunteerProfile.insertMany(volunteersToCreate, { ordered: false });
         results.created = createResult.length;
-        console.log(`Created ${results.created} new volunteers`);
       } catch (insertError: any) {
-        console.log(`InsertMany error:`, insertError.message);
-        console.log(`Error code:`, insertError.code);
-        console.log(`Error name:`, insertError.name);
 
         // Check for bulk write error (partial success)
         if (insertError.insertedDocs) {
@@ -340,9 +328,7 @@ export async function POST(request: NextRequest) {
 
         // Log the errors
         if (insertError.writeErrors && insertError.writeErrors.length > 0) {
-          console.log(`Write errors: ${insertError.writeErrors.length}`);
           insertError.writeErrors.slice(0, 10).forEach((err: any, idx: number) => {
-            console.log(`Error ${idx}:`, err.errmsg || err.message);
             results.errors.push({
               type: 'create_failed',
               message: err.errmsg || err.message,
@@ -357,7 +343,6 @@ export async function POST(request: NextRequest) {
           }
         } else if (insertError.errors && insertError.errors.length > 0) {
           // Mongoose validation errors
-          console.log(`Mongoose validation errors: ${insertError.errors.length}`);
           Object.keys(insertError.errors).slice(0, 10).forEach((key: string) => {
             const err = insertError.errors[key];
             results.errors.push({
@@ -373,13 +358,10 @@ export async function POST(request: NextRequest) {
             code: insertError.code,
           });
         }
-        console.log(`Created ${results.created} volunteers with ${results.errors.length} errors`);
       }
     } else {
-      console.log(`No volunteers to create (all matched existing records)`);
     }
 
-    console.log(`Import completed: ${results.matched} matched, ${results.updated} modified, ${results.created} created, ${results.skipped} skipped`);
 
     return NextResponse.json({
       success: true,

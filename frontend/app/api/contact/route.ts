@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📧 Sending contact form email...');
 
     // Send email to admin
     const data = await resend.emails.send({
@@ -59,7 +58,6 @@ export async function POST(request: NextRequest) {
       `,
     });
 
-    console.log('✓ Contact form email sent successfully');
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
     console.error('❌ Error sending contact email:', error);

@@ -102,7 +102,6 @@ export async function DELETE(request: NextRequest) {
     if (firebaseUid) {
       try {
         await adminAuth.deleteUser(firebaseUid);
-        console.log(`Successfully deleted Firebase user: ${firebaseUid}`);
       } catch (firebaseError: any) {
         console.error('Firebase deletion error:', firebaseError);
         // Only continue if user doesn't exist in Firebase
@@ -110,20 +109,17 @@ export async function DELETE(request: NextRequest) {
         if (firebaseError.code !== 'auth/user-not-found') {
           throw new Error(`Failed to delete Firebase user: ${firebaseError.message}`);
         }
-        console.log('Firebase user not found, continuing with database cleanup');
       }
     } else if (email) {
       // If no firebaseUid but we have email, try to find and delete by email
       try {
         const userRecord = await adminAuth.getUserByEmail(email);
         await adminAuth.deleteUser(userRecord.uid);
-        console.log(`Successfully deleted Firebase user by email: ${email}`);
       } catch (firebaseError: any) {
         console.error('Firebase deletion by email error:', firebaseError);
         if (firebaseError.code !== 'auth/user-not-found') {
           throw new Error(`Failed to delete Firebase user: ${firebaseError.message}`);
         }
-        console.log('Firebase user not found by email, continuing with database cleanup');
       }
     }
 
