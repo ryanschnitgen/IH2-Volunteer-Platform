@@ -106,7 +106,7 @@ const HoursLogSchema = new mongoose.Schema<IHoursLog>(
     },
     matchType: {
       type: String,
-      enum: ['email', 'exact-name', 'fuzzy-name', 'new', null],
+      enum: ['email', 'exact-name', 'fuzzy-name', 'new', 'email-registration', 'name-registration', null],
     },
     pendingApproval: {
       type: Boolean,
