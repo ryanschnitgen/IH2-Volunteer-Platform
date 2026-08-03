@@ -53,14 +53,22 @@ export async function GET(request: NextRequest) {
       if (email) manualHoursMap.set(email, (manualHoursMap.get(email) || 0) + (log.hours || 0));
     }
 
-    const eventHoursMap = new Map<string, number>();
+    const eventHoursMap = new Map<string, number>();    // per-person hours
+    const guestHoursMap = new Map<string, number>();    // hours for guests they brought
     const eventsAttendedMap = new Map<string, number>();
+    const volunteerNameMap = new Map<string, string>(); // email → display name
+
     for (const reg of eventRegistrations) {
       const email = (reg.userEmail || '').toLowerCase().trim();
-      if (email) {
-        eventHoursMap.set(email, (eventHoursMap.get(email) || 0) + (reg.hoursCompleted || 0));
-        eventsAttendedMap.set(email, (eventsAttendedMap.get(email) || 0) + 1);
+      if (!email) continue;
+      const perPersonHours = reg.hoursCompleted || 0;
+      const guests = (reg.totalAttendees || 1) - 1;
+      eventHoursMap.set(email, (eventHoursMap.get(email) || 0) + perPersonHours);
+      if (guests > 0) {
+        guestHoursMap.set(email, (guestHoursMap.get(email) || 0) + perPersonHours * guests);
       }
+      eventsAttendedMap.set(email, (eventsAttendedMap.get(email) || 0) + 1);
+      if (reg.userName) volunteerNameMap.set(email, reg.userName);
     }
 
     const headers = [
@@ -69,6 +77,7 @@ export async function GET(request: NextRequest) {
       'Email',
       'Phone',
       `${year} Event Hours`,
+      `${year} Guest Hours`,
       `${year} Manual Hours`,
       `${year} Total Hours`,
       `${year} Events Attended`,
@@ -85,8 +94,9 @@ export async function GET(request: NextRequest) {
     for (const profile of profiles) {
       const email = (profile.email || '').toLowerCase().trim();
       const eventHours = eventHoursMap.get(email) || 0;
+      const guestHours = guestHoursMap.get(email) || 0;
       const manualHours = manualHoursMap.get(email) || 0;
-      const totalHours = eventHours + manualHours;
+      const totalHours = eventHours + guestHours + manualHours;
       const eventsAttended = eventsAttendedMap.get(email) || 0;
 
       rows.push([
@@ -95,11 +105,29 @@ export async function GET(request: NextRequest) {
         escapeField(profile.email),
         escapeField(profile.phone),
         escapeField(eventHours.toFixed(2)),
+        escapeField(guestHours > 0 ? guestHours.toFixed(2) : ''),
         escapeField(manualHours.toFixed(2)),
         escapeField(totalHours.toFixed(2)),
         escapeField(eventsAttended),
         escapeField((profile.lifetimeHours || 0).toFixed(2)),
       ].join(','));
+
+      // Add a guest row immediately after the volunteer if they brought guests
+      if (guestHours > 0) {
+        const displayName = volunteerNameMap.get(email) || `${profile.firstName} ${profile.lastName}`.trim();
+        rows.push([
+          escapeField(`${displayName}'s Guests`),
+          '',
+          '',
+          '',
+          '',
+          escapeField(guestHours.toFixed(2)),
+          '',
+          escapeField(guestHours.toFixed(2)),
+          '',
+          '',
+        ].join(','));
+      }
     }
 
     const csv = rows.join('\n');

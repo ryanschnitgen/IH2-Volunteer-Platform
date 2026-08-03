@@ -50,10 +50,10 @@ export async function GET(request: NextRequest) {
     const registrations = allRegistrations.filter(r => new Date(r.eventDate) >= startDate);
     const hoursLogs = allHoursLogs.filter(h => new Date(h.date) >= startDate);
 
-    // Calculate total hours (event hours + manual hours)
+    // Calculate total hours — multiply hoursCompleted by totalAttendees to include guest person-hours
     const eventHours = registrations
       .filter(r => r.hoursCompleted > 0 && (r.checkedIn || r.attended))
-      .reduce((sum, r) => sum + r.hoursCompleted, 0);
+      .reduce((sum, r) => sum + r.hoursCompleted * (r.totalAttendees || 1), 0);
 
     const manualHours = hoursLogs
       .filter((log: any) => !log.autoAssigned && !log.pendingApproval)
@@ -61,11 +61,17 @@ export async function GET(request: NextRequest) {
 
     const totalHours = eventHours + manualHours;
 
-    // Current year hours
+    // Current year hours — multiply by totalAttendees to include guest person-hours
     const currentYear = now.getFullYear();
-    const currentYearHours = hoursLogs
-      .filter(log => new Date(log.date).getFullYear() === currentYear)
-      .reduce((sum, log) => sum + log.hours, 0);
+    const currentYearEventHours = allRegistrations
+      .filter((r: any) => new Date(r.eventDate).getFullYear() === currentYear &&
+        r.hoursCompleted > 0 && (r.checkedIn || r.attended) && r.cancelled !== true)
+      .reduce((sum: number, r: any) => sum + r.hoursCompleted * (r.totalAttendees || 1), 0);
+    const currentYearManualHours = allHoursLogs
+      .filter((log: any) => new Date(log.date).getFullYear() === currentYear &&
+        !log.autoAssigned && !log.pendingApproval)
+      .reduce((sum: number, log: any) => sum + log.hours, 0);
+    const currentYearHours = currentYearEventHours + currentYearManualHours;
 
     // Average hours per volunteer (all time)
     const avgHoursPerVolunteer = totalVolunteers > 0 ? totalHours / totalVolunteers : 0;

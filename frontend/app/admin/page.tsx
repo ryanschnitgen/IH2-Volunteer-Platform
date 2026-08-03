@@ -70,8 +70,8 @@ export default function AdminDashboard() {
                  reg.cancelled !== true; // Exclude cancelled registrations
         })
         .reduce((sum: number, reg: any) => {
-          // Count hours for only the person who checked in (not the whole group)
-          return sum + reg.hoursCompleted;
+          // Multiply by totalAttendees to include guest person-hours in the total
+          return sum + reg.hoursCompleted * (reg.totalAttendees || 1);
         }, 0);
 
       // Add manual and clock-in/out hours (not auto-assigned from events, not pending)

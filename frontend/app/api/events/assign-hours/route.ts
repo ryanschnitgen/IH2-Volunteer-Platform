@@ -115,37 +115,33 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Calculate total hours - multiply by group size if checking in for guests
+        // hoursToAssign is the per-person duration
+        // totalAttendees on the registration captures the group size for analytics multiplication
         const isQRCheckIn = registration.checkedIn;
-        const isGroupCheckIn = registration.isGroupCheckIn || false;
         const groupSize = registration.totalAttendees || 1;
 
-        // For group check-ins, multiply hours by the total number of attendees
-        const totalHoursToLog = isGroupCheckIn ? hoursToAssign * groupSize : hoursToAssign;
-
-        const noteText = isGroupCheckIn
-          ? `Auto-assigned for ${groupSize} ${groupSize === 1 ? 'person' : 'people'} (group check-in) - ${hoursToAssign} hours each`
+        const noteText = groupSize > 1
+          ? `Auto-assigned - ${hoursToAssign} hrs × ${groupSize} people (${(hoursToAssign * groupSize).toFixed(1)} total person-hours)`
           : isQRCheckIn
           ? `Auto-assigned - QR code check-in at ${event.title}`
           : `Auto-assigned for attending ${event.title}`;
 
+        // HoursLog stores per-person hours (volunteer's personal credit)
         if (pendingEntry) {
-          // Approve the pending check-in entry with final hours
           await HoursLog.findByIdAndUpdate(pendingEntry._id, {
-            hours: totalHoursToLog,
+            hours: hoursToAssign,
             autoAssigned: true,
             pendingApproval: false,
             notes: noteText,
           });
         } else {
-          // Create hours log entry directly
           await HoursLog.create({
             userId: registration.userId,
             userEmail: registration.userEmail,
             userName: registration.userName,
             eventId,
             eventTitle: event.title,
-            hours: totalHoursToLog,
+            hours: hoursToAssign,
             date: event.date,
             autoAssigned: true,
             pendingApproval: false,
@@ -153,9 +149,9 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Update the registration to reflect hours completed and attended status
+        // hoursCompleted = per-person hours; analytics multiplies by totalAttendees
         await EventRegistration.findByIdAndUpdate(registration._id, {
-          hoursCompleted: hoursToAssign, // Per-person hours
+          hoursCompleted: hoursToAssign,
           attended: true,
         });
 
