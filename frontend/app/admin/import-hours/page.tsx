@@ -319,7 +319,7 @@ export default function ImportHours() {
 
                 {matchPreview && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="font-bold text-blue-900 mb-3">📊 Match Analysis</h3>
+                    <h3 className="font-bold text-blue-900 mb-3">Match Analysis</h3>
                     <div className="grid md:grid-cols-3 gap-4 mb-4">
                       <div className="bg-white rounded p-3">
                         <div className="text-2xl font-bold text-gray-900">{matchPreview.totalRows}</div>

@@ -539,9 +539,8 @@ END:VCALENDAR`;
                         <>
                           <button
                             onClick={() => addToCalendar(registration)}
-                            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition flex items-center gap-2"
+                            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition"
                           >
-                            <span>📅</span>
                             Add to Calendar
                           </button>
                           <button

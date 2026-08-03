@@ -334,7 +334,7 @@ export default function LogHoursPage() {
                 disabled={clockLoading || !clockInActivity.trim()}
                 className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
               >
-                {clockLoading ? "Clocking In..." : "🕐 Clock In"}
+                {clockLoading ? "Clocking In..." : "Clock In"}
               </button>
             </div>
           ) : (
@@ -378,7 +378,7 @@ export default function LogHoursPage() {
                 disabled={clockLoading}
                 className="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
               >
-                {clockLoading ? "Clocking Out..." : "🕐 Clock Out"}
+                {clockLoading ? "Clocking Out..." : "Clock Out"}
               </button>
             </div>
           )}
@@ -496,10 +496,7 @@ export default function LogHoursPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <span>📅</span>
-                          <span>{formatDate(log.date)}</span>
-                        </span>
+                        <span>{formatDate(log.date)}</span>
                       </div>
                       {log.notes && (
                         <p className="mt-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">

@@ -937,8 +937,8 @@ export default function AdminVolunteersPage() {
                       {updatingUserId === selectedVolunteer.linkedUserId
                         ? "Updating..."
                         : selectedVolunteer.isAdmin
-                        ? "🔻 Revoke Admin"
-                        : "⬆️ Grant Admin"}
+                        ? "Revoke Admin"
+                        : "Grant Admin"}
                     </button>
                     <button
                       onClick={() => handleDeleteAccount(selectedVolunteer)}

@@ -278,7 +278,7 @@ export default function ImportVolunteers() {
             )}
             {result.results.errors && result.results.errors.length > 0 && (
               <details className="mt-4" open>
-                <summary className="cursor-pointer font-semibold text-red-700">❌ View Errors ({result.results.errors.length})</summary>
+                <summary className="cursor-pointer font-semibold text-red-700">View Errors ({result.results.errors.length})</summary>
                 <pre className="text-xs mt-2 overflow-auto bg-white p-2 rounded max-h-64 text-red-800">
                   {JSON.stringify(result.results.errors, null, 2)}
                 </pre>
@@ -357,7 +357,7 @@ export default function ImportVolunteers() {
 
                 {matchPreview && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="font-bold text-blue-900 mb-3">📊 Match Analysis</h3>
+                    <h3 className="font-bold text-blue-900 mb-3">Match Analysis</h3>
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
                       <div className="bg-white rounded p-3">
                         <div className="text-2xl font-bold text-green-600">{matchPreview.willUpdate}</div>

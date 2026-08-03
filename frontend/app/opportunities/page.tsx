@@ -935,7 +935,7 @@ export default function Opportunities() {
                       />
                       <div>
                         <span className="text-gray-900 font-medium block">
-                          ☑️ I'm bringing family/guests who won't check in separately
+                          I'm bringing family/guests who won't check in separately
                         </span>
                         <span className="text-sm text-gray-600 block mt-1">
                           (Kids, family members, or guests without volunteer accounts)

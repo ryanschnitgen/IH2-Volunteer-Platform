@@ -1472,7 +1472,7 @@ export default function AdminEventsPage() {
                     }}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition"
                   >
-                    🗑️ Delete Event
+                    Delete Event
                   </button>
                 </div>
 
@@ -1563,24 +1563,24 @@ export default function AdminEventsPage() {
                   </div>
                   <div className="grid grid-cols-4 gap-4 text-xs text-gray-700 border-t border-blue-200 pt-2">
                     <div>
-                      <strong>✅ Total Attended:</strong> {registrations.filter(r => (r.attended || r.checkedIn) && !r.cancelled).length}
+                      <strong>Total Attended:</strong> {registrations.filter(r => (r.attended || r.checkedIn) && !r.cancelled).length}
                     </div>
                     <div>
-                      <strong>📱 QR Check-ins:</strong> {registrations.filter(r => r.checkedIn && !r.cancelled).length}
+                      <strong>QR Check-ins:</strong> {registrations.filter(r => r.checkedIn && !r.cancelled).length}
                     </div>
                     <div>
                       <strong>✓ Manual Marked:</strong> {registrations.filter(r => r.attended && !r.checkedIn && !r.cancelled).length}
                     </div>
                     <div>
-                      <strong>❌ Not Attended:</strong> {registrations.filter(r => !r.attended && !r.checkedIn && !r.cancelled).length}
+                      <strong>Not Attended:</strong> {registrations.filter(r => !r.attended && !r.checkedIn && !r.cancelled).length}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-xs text-gray-700 border-t border-blue-200 pt-2 mt-2">
                     <div>
-                      <strong>💜 Hours Assigned:</strong> {registrations.reduce((sum, r) => sum + (r.hoursCompleted || 0), 0).toFixed(1)} hrs ({registrations.filter(r => r.hoursCompleted > 0 && !r.cancelled).length} people)
+                      <strong>Hours Assigned:</strong> {registrations.reduce((sum, r) => sum + (r.hoursCompleted || 0), 0).toFixed(1)} hrs ({registrations.filter(r => r.hoursCompleted > 0 && !r.cancelled).length} people)
                     </div>
                     <div>
-                      <strong>🚫 Cancelled:</strong> {registrations.filter(r => r.cancelled).length}
+                      <strong>Cancelled:</strong> {registrations.filter(r => r.cancelled).length}
                     </div>
                   </div>
                 </div>
@@ -1615,7 +1615,7 @@ export default function AdminEventsPage() {
                     }}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition"
                   >
-                    🗑️ Delete Event
+                    Delete Event
                   </button>
                 </div>
 
@@ -1722,7 +1722,7 @@ export default function AdminEventsPage() {
                             )}
                             {registration.isGroupCheckIn && (
                               <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full">
-                                👨‍👩‍👧‍👦 Family/Guests
+                                Family/Guests
                               </span>
                             )}
                             {registration.cancelled && (
@@ -1737,7 +1737,7 @@ export default function AdminEventsPage() {
                             )}
                             {!registration.cancelled && registration.checkedIn && (
                               <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                                📱 QR CHECK-IN
+                                QR CHECK-IN
                               </span>
                             )}
                             {!registration.cancelled && registration.hoursCompleted > 0 && (
@@ -1747,7 +1747,7 @@ export default function AdminEventsPage() {
                             )}
                             {!registration.cancelled && !registration.attended && !registration.checkedIn && (
                               <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs font-semibold rounded-full">
-                                ❌ NOT ATTENDED
+                                NOT ATTENDED
                               </span>
                             )}
                           </div>
