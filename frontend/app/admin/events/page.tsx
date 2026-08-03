@@ -92,6 +92,10 @@ export default function AdminEventsPage() {
   const [addGroupSize, setAddGroupSize] = useState(2);
   const [addingGroup, setAddingGroup] = useState(false);
 
+  // Inline guest count editing
+  const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
+  const [guestCountDraft, setGuestCountDraft] = useState("");
+
   // Confirm modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState<{
@@ -183,6 +187,26 @@ export default function AdminEventsPage() {
     } catch (err) {
       console.error("Error updating attendance:", err);
       setError("Failed to update attendance. Please try again.");
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  const saveGuestCount = async (registrationId: string, newCount: number) => {
+    if (newCount < 1) return;
+    try {
+      const response = await fetch("/api/events/registrations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registrationId, totalAttendees: newCount, adminEmail: user?.email }),
+      });
+      if (!response.ok) throw new Error("Failed to update guest count");
+      setRegistrations(registrations.map(r =>
+        r._id === registrationId ? { ...r, totalAttendees: newCount } : r
+      ));
+      setEditingGuestId(null);
+    } catch (err) {
+      console.error("Error updating guest count:", err);
+      setError("Failed to update guest count. Please try again.");
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -1715,10 +1739,39 @@ export default function AdminEventsPage() {
                             <h4 className={`font-semibold ${registration.cancelled ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                               {registration.userName}
                             </h4>
-                            {registration.totalAttendees > 1 && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                                Group of {registration.totalAttendees}
-                              </span>
+                            {(registration.totalAttendees > 1 || registration.isGroupCheckIn) && (
+                              editingGuestId === registration._id ? (
+                                <span className="flex items-center gap-1">
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={guestCountDraft}
+                                    onChange={e => setGuestCountDraft(e.target.value)}
+                                    onKeyDown={e => {
+                                      if (e.key === "Enter") saveGuestCount(registration._id, parseInt(guestCountDraft) || 1);
+                                      if (e.key === "Escape") setEditingGuestId(null);
+                                    }}
+                                    className="w-16 px-2 py-0.5 border border-blue-400 rounded text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    autoFocus
+                                  />
+                                  <button
+                                    onClick={() => saveGuestCount(registration._id, parseInt(guestCountDraft) || 1)}
+                                    className="px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition"
+                                  >Save</button>
+                                  <button
+                                    onClick={() => setEditingGuestId(null)}
+                                    className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-xs font-semibold hover:bg-gray-300 transition"
+                                  >Cancel</button>
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => { setEditingGuestId(registration._id); setGuestCountDraft(String(registration.totalAttendees || 1)); }}
+                                  className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full hover:bg-blue-200 transition"
+                                  title="Click to edit guest count"
+                                >
+                                  Group of {registration.totalAttendees || 1} ✎
+                                </button>
+                              )
                             )}
                             {registration.isGroupCheckIn && (
                               <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full">

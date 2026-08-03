@@ -29,35 +29,37 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Update registration attendance status
+// Update registration attendance status or guest count
 export async function PATCH(request: NextRequest) {
   try {
-    const { registrationId, attended, adminEmail } = await request.json();
+    const { registrationId, attended, totalAttendees, adminEmail } = await request.json();
 
     if (!isAdmin(adminEmail)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    if (!registrationId || typeof attended !== 'boolean') {
-      return NextResponse.json(
-        { error: 'Registration ID and attended status required' },
-        { status: 400 }
-      );
+    if (!registrationId) {
+      return NextResponse.json({ error: 'Registration ID required' }, { status: 400 });
+    }
+
+    const update: Record<string, unknown> = {};
+    if (typeof attended === 'boolean') update.attended = attended;
+    if (typeof totalAttendees === 'number' && totalAttendees >= 1) update.totalAttendees = totalAttendees;
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
     await connectDB();
 
     const registration = await EventRegistration.findByIdAndUpdate(
       registrationId,
-      { attended },
+      update,
       { new: true }
     );
 
     if (!registration) {
-      return NextResponse.json(
-        { error: 'Registration not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
     }
 
     return NextResponse.json({ registration, updated: true });
