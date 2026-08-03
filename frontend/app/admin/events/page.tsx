@@ -904,7 +904,7 @@ export default function AdminEventsPage() {
                 <input
                   type="time"
                   required
-                  step="60"
+                  step="1800"
                   value={formData.startTime}
                   onChange={(e) =>
                     setFormData({ ...formData, startTime: e.target.value })
@@ -920,7 +920,7 @@ export default function AdminEventsPage() {
                 <input
                   type="time"
                   required
-                  step="60"
+                  step="1800"
                   value={formData.endTime}
                   onChange={(e) =>
                     setFormData({ ...formData, endTime: e.target.value })
