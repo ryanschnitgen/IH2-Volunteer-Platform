@@ -53,6 +53,7 @@ export async function POST(request: Request) {
         firstName,
         lastName,
         email: normalizedEmail,
+        linkedUserId: userId,
         ...waiverFields,
       });
     }
