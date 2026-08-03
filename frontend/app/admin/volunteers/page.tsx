@@ -735,13 +735,13 @@ export default function AdminVolunteersPage() {
               <div className="bg-blue-50 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-900 mb-3">Volunteer Information</h3>
                 <div className="space-y-2 text-sm">
-                  <div className={`${selectedVolunteer.lifetimeHours > 0 ? 'bg-purple-100 -mx-4 -mt-4 p-4 mb-3 rounded-t-lg' : ''}`}>
-                    <span className="font-medium text-gray-700">Imported Hours:</span>
-                    <span className="ml-2 text-purple-600 font-bold text-lg">{(selectedVolunteer.lifetimeHours || 0).toFixed(2)} hours</span>
-                    {selectedVolunteer.lifetimeHours > 0 && (
+                  {selectedVolunteer.lifetimeHours > 0 && (
+                    <div className="bg-purple-100 -mx-4 -mt-4 p-4 mb-3 rounded-t-lg">
+                      <span className="font-medium text-gray-700">Imported Hours:</span>
+                      <span className="ml-2 text-purple-600 font-bold text-lg">{selectedVolunteer.lifetimeHours.toFixed(2)} hours</span>
                       <p className="text-xs text-purple-700 mt-1">✓ Imported from previous platform</p>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   {selectedVolunteer.linkedUserId && (
                     <>
                       <div>
