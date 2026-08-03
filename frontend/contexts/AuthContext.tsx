@@ -20,6 +20,7 @@ interface AuthContextType {
   loading: boolean;
   waiverSigned: boolean;
   checkingWaiver: boolean;
+  markWaiverSigned: () => void;
   refreshWaiverStatus: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<UserCredential>;
@@ -58,6 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCheckingWaiver(false);
     }
   };
+
+  const markWaiverSigned = () => setWaiverSigned(true);
 
   const refreshWaiverStatus = async () => {
     if (user) {
@@ -140,6 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     waiverSigned,
     checkingWaiver,
+    markWaiverSigned,
     refreshWaiverStatus,
     signIn,
     signUp,

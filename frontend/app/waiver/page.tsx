@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function WaiverPage() {
-  const { user, loading: authLoading, refreshWaiverStatus } = useAuth();
+  const { user, loading: authLoading, markWaiverSigned, refreshWaiverStatus } = useAuth();
   const router = useRouter();
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -51,10 +51,9 @@ export default function WaiverPage() {
         throw new Error(data.error || "Failed to submit waiver");
       }
 
-      // Refresh waiver status in auth context
-      await refreshWaiverStatus();
-
-      // Redirect to home page after successful waiver submission
+      // Update context immediately so the nav hides the button before redirect
+      markWaiverSigned();
+      refreshWaiverStatus(); // sync with DB in background
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to submit waiver");
