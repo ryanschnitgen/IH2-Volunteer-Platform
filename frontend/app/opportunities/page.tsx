@@ -192,34 +192,10 @@ export default function Opportunities() {
     }
 
     setAdditionalAttendees(count);
-    // Preserve existing names when changing count
-    const currentNames = [...attendeeNames];
-    if (count > currentNames.length) {
-      // Adding more guests - fill with empty strings
-      setAttendeeNames([...currentNames, ...new Array(count - currentNames.length).fill('')]);
-    } else {
-      // Removing guests - keep only the first 'count' names
-      setAttendeeNames(currentNames.slice(0, count));
-    }
-  };
-
-  const handleAttendeeName = (index: number, name: string) => {
-    const newNames = [...attendeeNames];
-    newNames[index] = name;
-    setAttendeeNames(newNames);
   };
 
   const confirmRegistration = async () => {
     if (!user || !selectedEvent) return;
-
-    // Validate that all attendee names are filled if group registration (but not if group check-in)
-    if (isGroupRegistration && additionalAttendees > 0 && !isGroupCheckIn) {
-      const allNamesFilled = attendeeNames.every(name => name.trim().length > 0);
-      if (!allNamesFilled) {
-        alert('Please provide names for all additional attendees');
-        return;
-      }
-    }
 
     try {
       setRegisteringId(selectedEvent._id);
@@ -232,7 +208,7 @@ export default function Opportunities() {
           userEmail: user.email,
           userName: user.displayName || user.email,
           additionalAttendees: isGroupRegistration ? additionalAttendees : 0,
-          attendeeNames: isGroupRegistration && !isGroupCheckIn ? attendeeNames : [],
+          attendeeNames: [],
           isGroupCheckIn: isGroupCheckIn,
         }),
       });
@@ -283,15 +259,6 @@ export default function Opportunities() {
   const confirmEditRegistration = async () => {
     if (!user || !editingRegistration || !selectedEvent) return;
 
-    // Validate that all attendee names are filled if group registration
-    if (isGroupRegistration && additionalAttendees > 0) {
-      const allNamesFilled = attendeeNames.every(name => name.trim().length > 0);
-      if (!allNamesFilled) {
-        alert('Please provide names for all additional attendees');
-        return;
-      }
-    }
-
     try {
       setRegisteringId(selectedEvent._id);
       const response = await fetch(`/api/events/register/${editingRegistration._id}`, {
@@ -300,7 +267,7 @@ export default function Opportunities() {
         body: JSON.stringify({
           userId: user?.uid,
           additionalAttendees: isGroupRegistration ? additionalAttendees : 0,
-          attendeeNames: isGroupRegistration && !isGroupCheckIn ? attendeeNames : [],
+          attendeeNames: [],
           isGroupCheckIn: isGroupRegistration ? isGroupCheckIn : false,
         }),
       });
@@ -945,27 +912,6 @@ export default function Opportunities() {
                   </div>
                 )}
 
-                {/* Attendee Names - Only show if NOT group check-in */}
-                {additionalAttendees > 0 && !isGroupCheckIn && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Names of additional attendees:
-                      <span className="text-xs text-gray-500 ml-2">(Each person will check in separately)</span>
-                    </label>
-                    <div className="space-y-2">
-                      {Array.from({ length: additionalAttendees }).map((_, index) => (
-                        <input
-                          key={index}
-                          type="text"
-                          placeholder={`Person ${index + 1} name`}
-                          value={attendeeNames[index] || ''}
-                          onChange={(e) => handleAttendeeName(index, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -1110,33 +1056,6 @@ export default function Opportunities() {
                   </p>
                 </div>
 
-                {/* Attendee Names */}
-                {additionalAttendees > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Names of additional attendees:
-                    </label>
-                    <div className="space-y-2">
-                      {Array.from({ length: additionalAttendees }).map((_, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600 w-6">{index + 1}.</span>
-                          <input
-                            type="text"
-                            placeholder={`Guest ${index + 1} name`}
-                            value={attendeeNames[index] || ''}
-                            onChange={(e) => handleAttendeeName(index, e.target.value)}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    {editingRegistration.attendeeNames && editingRegistration.attendeeNames.length > additionalAttendees && (
-                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-                        <strong>Removing {editingRegistration.attendeeNames.length - additionalAttendees} guest(s):</strong> {editingRegistration.attendeeNames.slice(additionalAttendees).join(', ')}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
 
