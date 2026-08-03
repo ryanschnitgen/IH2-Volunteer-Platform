@@ -86,12 +86,12 @@ function AdminEmailPanel() {
   };
 
   const loadRecipients = async () => {
+    const myId = ++loadIdRef.current;
     if (filterType === "specific") {
       // Recipients already set from URL parameter, skip loading
       setLoadingRecipients(false);
       return;
     }
-    const myId = ++loadIdRef.current;
     setLoadingRecipients(true);
     try {
       if (filterType === "all") {
