@@ -20,6 +20,13 @@ interface VolunteerProfile {
   lifetimeHours: number;
 }
 
+interface VolunteerGroup {
+  _id: string;
+  name: string;
+  description: string;
+  memberEmails: string[];
+}
+
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -29,6 +36,11 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+
+  // Groups
+  const [allGroups, setAllGroups] = useState<VolunteerGroup[]>([]);
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
+  const [showJoinDropdown, setShowJoinDropdown] = useState(false);
 
   // Form fields
   const [firstName, setFirstName] = useState("");
@@ -51,6 +63,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       loadProfile();
+      fetch("/api/groups").then(r => r.json()).then(d => setAllGroups(d.groups || []));
     }
   }, [user]);
 
@@ -145,6 +158,29 @@ export default function ProfilePage() {
     }
     setEditing(false);
     setError("");
+  };
+
+  const toggleGroup = async (groupId: string, isMember: boolean) => {
+    if (!user?.email) return;
+    setJoiningGroupId(groupId);
+    try {
+      const res = await fetch(`/api/groups/${groupId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: isMember ? "leave" : "join",
+          userEmail: user.email,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAllGroups(prev => prev.map(g => g._id === groupId ? { ...g, memberEmails: data.group.memberEmails } : g));
+      setShowJoinDropdown(false);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setJoiningGroupId(null);
+    }
   };
 
   if (authLoading || loading) {
@@ -404,6 +440,71 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* Groups */}
+        {allGroups.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900">My Groups</h2>
+              <div className="relative">
+                <button
+                  onClick={() => setShowJoinDropdown(!showJoinDropdown)}
+                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition"
+                >
+                  Join a Group
+                </button>
+                {showJoinDropdown && (
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 z-10 overflow-hidden">
+                    {allGroups.map(group => {
+                      const isMember = group.memberEmails.includes((user?.email || "").toLowerCase());
+                      return (
+                        <button
+                          key={group._id}
+                          onClick={() => toggleGroup(group._id, isMember)}
+                          disabled={joiningGroupId === group._id}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-0 flex items-center justify-between"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{group.name}</p>
+                            {group.description && <p className="text-xs text-gray-400">{group.description}</p>}
+                          </div>
+                          {isMember ? (
+                            <span className="text-xs text-green-600 font-semibold ml-3 shrink-0">✓ Joined</span>
+                          ) : (
+                            <span className="text-xs text-primary-600 font-semibold ml-3 shrink-0">Join</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {(() => {
+              const myGroups = allGroups.filter(g => g.memberEmails.includes((user?.email || "").toLowerCase()));
+              return myGroups.length === 0 ? (
+                <p className="text-sm text-gray-400">You haven&apos;t joined any groups yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {myGroups.map(g => (
+                    <div key={g._id} className="flex items-center gap-1.5 bg-primary-50 text-primary-700 rounded-full px-3 py-1.5 text-sm font-medium">
+                      {g.name}
+                      <button
+                        onClick={() => toggleGroup(g._id, true)}
+                        disabled={joiningGroupId === g._id}
+                        className="text-primary-400 hover:text-primary-700 ml-1 leading-none"
+                        title="Leave group"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Quick Links */}
         <div className="grid md:grid-cols-3 gap-3">
