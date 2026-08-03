@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -29,6 +29,12 @@ function getAuthErrorMessage(error: any): string {
   }
 }
 
+interface VolunteerGroup {
+  _id: string;
+  name: string;
+  description: string;
+}
+
 export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -44,8 +50,18 @@ export default function Signup() {
   const [canLiftHeavy, setCanLiftHeavy] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Groups
+  const [availableGroups, setAvailableGroups] = useState<VolunteerGroup[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [newGroupName, setNewGroupName] = useState("");
+
   const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/groups").then(r => r.json()).then(d => setAvailableGroups(d.groups || []));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +108,19 @@ export default function Signup() {
       if (!profileRes.ok) {
         const profileData = await profileRes.json();
         throw new Error(profileData.error || "Failed to create profile");
+      }
+
+      // Join selected groups and/or create a new one
+      if (selectedGroupIds.length > 0 || newGroupName.trim()) {
+        await fetch("/api/groups/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            groupIds: selectedGroupIds,
+            newGroupName: newGroupName.trim() || undefined,
+          }),
+        });
       }
 
       router.push("/waiver");
@@ -202,6 +231,51 @@ export default function Signup() {
                   className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
                 <span className="text-sm text-gray-700">I can lift heavy items (25+ lbs)</span>
               </label>
+
+              {/* Groups */}
+              <div className="pt-1 border-t border-gray-100">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Volunteer groups <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                {availableGroups.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {availableGroups.map(group => (
+                      <label key={group._id} className="flex items-start gap-2.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedGroupIds.includes(group._id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setSelectedGroupIds(prev => [...prev, group._id]);
+                            } else {
+                              setSelectedGroupIds(prev => prev.filter(id => id !== group._id));
+                            }
+                          }}
+                          className="h-4 w-4 mt-0.5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                        <div>
+                          <span className="text-sm text-gray-800 font-medium">{group.name}</span>
+                          {group.description && (
+                            <span className="text-xs text-gray-400 ml-1.5">{group.description}</span>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Don&apos;t see your group? Add it:
+                  </label>
+                  <input
+                    type="text"
+                    value={newGroupName}
+                    onChange={e => setNewGroupName(e.target.value)}
+                    placeholder="Group name"
+                    className="block w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  />
+                </div>
+              </div>
 
               <div className="pt-1 border-t border-gray-100">
                 <div className="grid grid-cols-1 gap-3 mt-4">
