@@ -19,6 +19,7 @@ interface KioskRegistration {
 
 type Mode =
   | "loading"
+  | "no-events"
   | "event-select"
   | "member-select"
   | "guest-question"
@@ -71,7 +72,7 @@ export default function VolunteerCheckIn() {
       const data = await res.json();
       const events: KioskEvent[] = data.events || [];
       setTodayEvents(events);
-      setMode(events.length > 0 ? "event-select" : "manual");
+      setMode(events.length > 0 ? "event-select" : "no-events");
     } catch {
       setMode("manual");
     }
@@ -197,7 +198,7 @@ export default function VolunteerCheckIn() {
         setCheckedInEvents([]);
         setAutoMatched(false);
         setError("");
-        setMode(todayEvents.length > 0 ? "event-select" : "manual");
+        setMode(todayEvents.length > 0 ? "event-select" : "no-events");
       }, 5000);
     } catch (err: any) {
       setError(err.message || "Failed to submit check-in");
@@ -223,7 +224,7 @@ export default function VolunteerCheckIn() {
     else if (mode === "guest-count") {
       setMode(selectedRegId ? "guest-question" : "manual");
     } else if (mode === "manual") {
-      setMode(todayEvents.length > 0 ? "event-select" : "manual");
+      setMode(todayEvents.length > 0 ? "event-select" : "no-events");
     }
   }
 
@@ -272,6 +273,42 @@ export default function VolunteerCheckIn() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
+
+  // ── No events today ──────────────────────────────────────────────────────────
+  if (mode === "no-events") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-lg w-full text-center">
+          <div className="text-center mb-6">
+            <p className="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-2">
+              Inspired Hearts and Hands
+            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Volunteer Sign In</h1>
+          </div>
+          <div className="mb-8">
+            <div className="text-5xl mb-4">📅</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-3">No Event Scheduled Today</h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              There is no volunteer event scheduled for today. Please check your calendar for upcoming events, or contact us if you have questions.
+            </p>
+            <p className="text-gray-400 text-sm mt-3">
+              <span className="font-medium text-gray-600">Questions?</span> Reach out to us at{" "}
+              <a href="mailto:info@inspiredheartsandhands.com" className="text-primary-600 underline">
+                info@inspiredheartsandhands.com
+              </a>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMode("manual")}
+            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-medium text-sm transition"
+          >
+            Sign in anyway (walk-in)
+          </button>
+        </div>
       </div>
     );
   }
