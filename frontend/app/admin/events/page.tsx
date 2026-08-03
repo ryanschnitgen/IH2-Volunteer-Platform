@@ -1659,18 +1659,12 @@ export default function AdminEventsPage() {
                                 type="checkbox"
                                 checked={registration.attended || registration.checkedIn || false}
                                 onChange={() => toggleAttendance(registration._id, registration.attended || false)}
-                                disabled={registration.checkedIn}
-                                className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
                               />
                               <span className="text-sm font-medium text-gray-700">
                                 Attended
                               </span>
                             </label>
-                            {registration.checkedIn && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Locked (QR check-in)
-                              </p>
-                            )}
                           </div>
                         )}
                       </div>
