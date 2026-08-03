@@ -41,20 +41,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [waiverSigned, setWaiverSigned] = useState(false);
   const [checkingWaiver, setCheckingWaiver] = useState(false);
 
-  // Function to check waiver status
+  // Function to check waiver status.
+  // Uses a functional updater so a concurrent stale fetch can never downgrade
+  // waiverSigned from true back to false within the same session.
   const checkWaiverStatus = async (userId: string) => {
     try {
       setCheckingWaiver(true);
       const response = await fetch(`/api/volunteers/profile?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
-        setWaiverSigned(data.profile?.waiverAccepted || false);
-      } else {
-        setWaiverSigned(false);
+        const accepted = data.profile?.waiverAccepted === true;
+        setWaiverSigned(prev => prev || accepted);
       }
+      // On !ok or error we leave waiverSigned as-is — a network blip or race
+      // should not cause the button to reappear after the user already signed.
     } catch (error) {
       console.error('Error checking waiver status:', error);
-      setWaiverSigned(false);
     } finally {
       setCheckingWaiver(false);
     }
