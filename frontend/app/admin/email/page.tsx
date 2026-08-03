@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { isAdmin } from "@backend/lib/admin";
 
 interface EmailRecipient {
@@ -33,6 +33,7 @@ function AdminEmailPanel() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [loadingRecipients, setLoadingRecipients] = useState(true);
+  const loadIdRef = useRef(0);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin(user.email))) {
@@ -85,6 +86,12 @@ function AdminEmailPanel() {
   };
 
   const loadRecipients = async () => {
+    if (filterType === "specific") {
+      // Recipients already set from URL parameter, skip loading
+      setLoadingRecipients(false);
+      return;
+    }
+    const myId = ++loadIdRef.current;
     setLoadingRecipients(true);
     try {
       if (filterType === "all") {
@@ -94,6 +101,7 @@ function AdminEmailPanel() {
           fetch(`/api/volunteers?adminEmail=${adminParam}`),
           fetch(`/api/admin/users?adminEmail=${adminParam}`),
         ]);
+        if (myId !== loadIdRef.current) return;
 
         const seenEmails = new Set<string>();
         const usersList: EmailRecipient[] = [];
@@ -120,11 +128,13 @@ function AdminEmailPanel() {
           }
         }
 
+        if (myId !== loadIdRef.current) return;
         setRecipients(usersList);
       } else if (filterType === "current") {
         // Get only current platform users (registered accounts)
         const response = await fetch(`/api/admin/users?adminEmail=${encodeURIComponent(user?.email || '')}`);
         const data = await response.json();
+        if (myId !== loadIdRef.current) return;
 
         if (response.ok) {
           const usersList: EmailRecipient[] = data.users.map((user: any) => ({
@@ -138,6 +148,7 @@ function AdminEmailPanel() {
         // Get users registered for specific event
         const response = await fetch(`/api/events/registrations/all?adminEmail=${encodeURIComponent(user?.email || '')}`);
         const data = await response.json();
+        if (myId !== loadIdRef.current) return;
 
         if (response.ok) {
           const usersList: EmailRecipient[] = [];
@@ -158,16 +169,13 @@ function AdminEmailPanel() {
 
           setRecipients(usersList);
         }
-      } else if (filterType === "specific") {
-        // Recipients already set from URL parameter, skip loading
-        setLoadingRecipients(false);
-        return;
       }
     } catch (err) {
+      if (myId !== loadIdRef.current) return;
       console.error("Error loading recipients:", err);
       setError("Failed to load recipients");
     } finally {
-      setLoadingRecipients(false);
+      if (myId === loadIdRef.current) setLoadingRecipients(false);
     }
   };
 
