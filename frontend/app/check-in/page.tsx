@@ -37,6 +37,7 @@ export default function VolunteerCheckIn() {
 
   // Form fields (manual form or pre-filled from selection)
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
   const [name, setName] = useState(""); // pre-filled from dropdown selection
   const [email, setEmail] = useState("");
@@ -134,12 +135,13 @@ export default function VolunteerCheckIn() {
     if (!lastName.trim()) { setError("Please enter your last name"); return; }
     if (!email.trim()) { setError("Please enter your email"); return; }
     if (hasGuests === null) { setError("Please select whether you brought guests"); return; }
-    setName(`${firstName.trim()} ${lastName.trim()}`);
+    const fullName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
+    setName(fullName);
     if (hasGuests) {
       setGuestCount(0);
       setMode("guest-count");
     } else {
-      handleFinalSubmit(`${firstName.trim()} ${lastName.trim()}`);
+      handleFinalSubmit(fullName);
     }
   }
 
@@ -148,7 +150,7 @@ export default function VolunteerCheckIn() {
     setError("");
     if (guestCount < 1) { setError("Please enter at least 1 guest"); return; }
     const effectiveName = firstName.trim() && lastName.trim()
-      ? `${firstName.trim()} ${lastName.trim()}`
+      ? [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ')
       : name;
     handleFinalSubmit(effectiveName);
   }
@@ -183,6 +185,7 @@ export default function VolunteerCheckIn() {
       // Reset after 5 seconds for next volunteer
       setTimeout(() => {
         setFirstName("");
+        setMiddleName("");
         setLastName("");
         setName("");
         setEmail("");
@@ -440,7 +443,7 @@ export default function VolunteerCheckIn() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  First name
+                  First name <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="firstName"
@@ -454,7 +457,7 @@ export default function VolunteerCheckIn() {
               </div>
               <div>
                 <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Last name
+                  Last name <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="lastName"
@@ -466,6 +469,19 @@ export default function VolunteerCheckIn() {
                   placeholder="Last"
                 />
               </div>
+            </div>
+            <div>
+              <label htmlFor="middleName" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Middle name <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                id="middleName"
+                type="text"
+                value={middleName}
+                onChange={e => setMiddleName(e.target.value)}
+                className="w-full px-3.5 py-3 border border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                placeholder="Middle"
+              />
             </div>
 
             <div>

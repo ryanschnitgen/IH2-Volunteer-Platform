@@ -36,7 +36,9 @@ interface VolunteerGroup {
 }
 
 export default function Signup() {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -75,25 +77,26 @@ export default function Signup() {
     if (password.length < 8) {
       return setError("Password must be at least 8 characters");
     }
+    if (!firstName.trim()) return setError("First name is required");
+    if (!lastName.trim()) return setError("Last name is required");
 
     setLoading(true);
 
     try {
+      const displayName = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(' ');
+
       // Sign up the user
-      const userCredential = await signUp(email, password, name);
+      const userCredential = await signUp(email, password, displayName);
 
       // Create/update volunteer profile with additional information
-      const nameParts = name.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
       const profileRes = await fetch("/api/volunteers/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: userCredential.user.uid,
-          firstName,
-          lastName,
+          firstName: firstName.trim(),
+          middleName: middleName.trim(),
+          lastName: lastName.trim(),
           email,
           phone,
           address,
@@ -169,9 +172,21 @@ export default function Signup() {
             )}
 
             <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1.5">First name <span className="text-red-500">*</span></label>
+                  <input id="firstName" name="firstName" type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)}
+                    className="block w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition" />
+                </div>
+                <div>
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1.5">Last name <span className="text-red-500">*</span></label>
+                  <input id="lastName" name="lastName" type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)}
+                    className="block w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition" />
+                </div>
+              </div>
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
-                <input id="name" name="name" type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                <label htmlFor="middleName" className="block text-sm font-medium text-gray-700 mb-1.5">Middle name <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input id="middleName" name="middleName" type="text" value={middleName} onChange={(e) => setMiddleName(e.target.value)}
                   className="block w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition" />
               </div>
 

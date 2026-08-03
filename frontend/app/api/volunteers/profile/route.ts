@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     const {
       userId,
       firstName,
+      middleName,
       lastName,
       email,
       phone,
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
     if (profile) {
       // Update existing profile
       profile.firstName = firstName;
+      if (middleName !== undefined) profile.middleName = middleName;
       profile.lastName = lastName;
       profile.phone = phone || profile.phone;
       profile.address = address || profile.address;
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
       // Create new profile
       profile = await VolunteerProfile.create({
         firstName,
+        middleName: middleName || '',
         lastName,
         email: email.toLowerCase().trim(),
         phone,

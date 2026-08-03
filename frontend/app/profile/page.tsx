@@ -7,6 +7,7 @@ import Link from "next/link";
 
 interface VolunteerProfile {
   firstName: string;
+  middleName?: string;
   lastName: string;
   email: string;
   phone?: string;
@@ -44,6 +45,7 @@ export default function ProfilePage() {
 
   // Form fields
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -95,6 +97,7 @@ export default function ProfilePage() {
 
   const populateForm = (prof: VolunteerProfile) => {
     setFirstName(prof.firstName || "");
+    setMiddleName(prof.middleName || "");
     setLastName(prof.lastName || "");
     setPhone(prof.phone || "");
     setAddress(prof.address || "");
@@ -121,6 +124,7 @@ export default function ProfilePage() {
           userId: user.uid,
           email: user.email,
           firstName,
+          middleName,
           lastName,
           phone,
           address,
@@ -258,7 +262,7 @@ export default function ProfilePage() {
               <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
 
-            {/* First Name */}
+            {/* Name fields */}
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -291,6 +295,21 @@ export default function ProfilePage() {
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Middle Name <span className="text-gray-400 font-normal text-xs">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={middleName}
+                onChange={(e) => setMiddleName(e.target.value)}
+                disabled={!editing}
+                className={`w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm ${
+                  editing ? "focus:ring-2 focus:ring-primary-500 focus:border-transparent" : "bg-gray-50 text-gray-500"
+                }`}
+              />
             </div>
 
             {/* Phone */}
