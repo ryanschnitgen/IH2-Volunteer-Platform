@@ -8,6 +8,13 @@ import { formatTime } from "@/lib/formatTime";
 import { EVENT_TYPES, getCategoryForEventType } from "@/constants/eventTypes";
 import ConfirmModal from "@/components/ConfirmModal";
 
+// Generate every :00 and :30 slot across 24 hours as "HH:MM" values
+const HALF_HOUR_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? '00' : '30';
+  return `${String(h).padStart(2, '0')}:${m}`;
+});
+
 interface Event {
   _id: string;
   title: string;
@@ -901,32 +908,34 @@ export default function AdminEventsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Start Time *
                 </label>
-                <input
-                  type="time"
+                <select
                   required
-                  step="1800"
                   value={formData.startTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startTime: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                >
+                  <option value="">Select time</option>
+                  {HALF_HOUR_OPTIONS.map(t => (
+                    <option key={t} value={t}>{formatTime(t)}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   End Time *
                 </label>
-                <input
-                  type="time"
+                <select
                   required
-                  step="1800"
                   value={formData.endTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endTime: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                >
+                  <option value="">Select time</option>
+                  {HALF_HOUR_OPTIONS.map(t => (
+                    <option key={t} value={t}>{formatTime(t)}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
