@@ -27,30 +27,11 @@ export default function Home() {
   }, [user]);
 
   const loadCommunityHours = async () => {
-    if (!user) return;
     try {
-      const currentYear = new Date().getFullYear();
-      const adminEmail = encodeURIComponent(user.email || '');
-      const [hoursRes, registrationsRes] = await Promise.all([
-        fetch(`/api/hours/all?userId=${user.uid}&adminEmail=${adminEmail}`),
-        fetch(`/api/events/registrations/all?userId=${user.uid}&adminEmail=${adminEmail}`)
-      ]);
-      const hoursData = await hoursRes.json();
-      const registrationsData = await registrationsRes.json();
-
-      if (hoursRes.ok && registrationsRes.ok) {
-        const eventHours = (registrationsData.registrations || [])
-          .filter((reg: any) => {
-            const d = new Date(reg.eventDate);
-            return d.getFullYear() === currentYear && reg.hoursCompleted > 0 && (reg.checkedIn || reg.attended) && reg.cancelled !== true;
-          })
-          .reduce((sum: number, reg: any) => sum + reg.hoursCompleted, 0);
-
-        const manualHours = (hoursData.hoursLogs || [])
-          .filter((log: any) => new Date(log.date).getFullYear() === currentYear && !log.autoAssigned && !log.pendingApproval)
-          .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
-
-        setCommunityHours(eventHours + manualHours);
+      const res = await fetch('/api/stats/community-hours');
+      if (res.ok) {
+        const data = await res.json();
+        setCommunityHours(data.totalHours || 0);
       }
     } catch (err) {
       console.error("Error loading community hours:", err);
