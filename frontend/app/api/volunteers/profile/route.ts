@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const profile = await VolunteerProfile.findOne({ linkedUserId: userId }).lean();
+    // Prefer the profile with waiverAccepted: true in case of duplicates.
+    const profile =
+      (await VolunteerProfile.findOne({ linkedUserId: userId, waiverAccepted: true }).lean()) ??
+      (await VolunteerProfile.findOne({ linkedUserId: userId }).lean());
 
     return NextResponse.json({ profile });
   } catch (error: any) {

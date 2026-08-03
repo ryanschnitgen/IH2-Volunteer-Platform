@@ -24,32 +24,30 @@ export async function POST(request: Request) {
       lastUpdated: new Date(),
     };
 
-    // Try to find profile by linkedUserId first (email signup or previously linked)
-    let profile = await VolunteerProfile.findOneAndUpdate(
-      { linkedUserId: userId },
-      { $set: { ...waiverFields, linkedUserId: userId } },
-      { new: true }
+    // Update ALL profiles belonging to this user (by UID or by email).
+    // Using updateMany prevents duplicate-profile situations from causing
+    // a stale waiverAccepted: false to reappear after a page refresh.
+    const result = await VolunteerProfile.updateMany(
+      { $or: [{ linkedUserId: userId }, { email: normalizedEmail }] },
+      { $set: waiverFields }
     );
 
-    // Fallback: find by email — only set linkedUserId if the profile isn't already linked elsewhere
-    if (!profile) {
-      profile = await VolunteerProfile.findOneAndUpdate(
-        { email: normalizedEmail },
-        { $set: waiverFields },
-        { new: true }
-      );
-      if (profile && !profile.linkedUserId) {
-        await VolunteerProfile.findByIdAndUpdate(profile._id, { $set: { linkedUserId: userId } });
-      }
-    }
+    // Link any email-matched profiles that don't have a linkedUserId yet.
+    await VolunteerProfile.updateMany(
+      {
+        email: normalizedEmail,
+        $or: [{ linkedUserId: { $exists: false } }, { linkedUserId: null }, { linkedUserId: '' }],
+      },
+      { $set: { linkedUserId: userId } }
+    );
 
-    // Still not found: Google signup with no existing profile — create one
-    if (!profile) {
+    // No profiles found at all — Google signup with no existing profile.
+    if (result.matchedCount === 0) {
       const nameParts = (displayName || '').trim().split(' ');
       const firstName = nameParts[0] || normalizedEmail.split('@')[0];
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      profile = await VolunteerProfile.create({
+      await VolunteerProfile.create({
         firstName,
         lastName,
         email: normalizedEmail,
@@ -58,10 +56,7 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Waiver accepted successfully",
-    });
+    return NextResponse.json({ success: true, message: "Waiver accepted successfully" });
   } catch (error: any) {
     console.error("Error saving waiver acceptance:", error);
     return NextResponse.json(
