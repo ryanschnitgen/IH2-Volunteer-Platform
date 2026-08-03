@@ -442,17 +442,18 @@ export default function ProfilePage() {
         </div>
 
         {/* Groups */}
-        {allGroups.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-900">My Groups</h2>
-              <div className="relative">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-gray-900">My Groups</h2>
+            <div className="relative">
+              {allGroups.length > 0 && (
                 <button
                   onClick={() => setShowJoinDropdown(!showJoinDropdown)}
                   className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition"
                 >
                   Join a Group
                 </button>
+              )}
                 {showJoinDropdown && (
                   <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 z-10 overflow-hidden">
                     {allGroups.map(group => {
@@ -503,8 +504,7 @@ export default function ProfilePage() {
                 </div>
               );
             })()}
-          </div>
-        )}
+        </div>
 
         {/* Quick Links */}
         <div className="grid md:grid-cols-3 gap-3">

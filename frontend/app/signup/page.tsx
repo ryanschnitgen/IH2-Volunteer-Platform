@@ -55,6 +55,7 @@ export default function Signup() {
   const [availableGroups, setAvailableGroups] = useState<VolunteerGroup[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [newGroupName, setNewGroupName] = useState("");
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
 
   const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
@@ -238,29 +239,47 @@ export default function Signup() {
                   Volunteer groups <span className="text-gray-400 font-normal">(optional)</span>
                 </label>
                 {availableGroups.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    {availableGroups.map(group => (
-                      <label key={group._id} className="flex items-start gap-2.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedGroupIds.includes(group._id)}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              setSelectedGroupIds(prev => [...prev, group._id]);
-                            } else {
-                              setSelectedGroupIds(prev => prev.filter(id => id !== group._id));
-                            }
-                          }}
-                          className="h-4 w-4 mt-0.5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                        />
-                        <div>
-                          <span className="text-sm text-gray-800 font-medium">{group.name}</span>
-                          {group.description && (
-                            <span className="text-xs text-gray-400 ml-1.5">{group.description}</span>
-                          )}
-                        </div>
-                      </label>
-                    ))}
+                  <div className="relative mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowGroupDropdown(!showGroupDropdown)}
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary-500 transition bg-white"
+                    >
+                      <span className={selectedGroupIds.length > 0 ? "text-gray-900" : "text-gray-400"}>
+                        {selectedGroupIds.length > 0
+                          ? `${selectedGroupIds.length} group${selectedGroupIds.length > 1 ? "s" : ""} selected`
+                          : "Select groups to join"}
+                      </span>
+                      <svg className={`w-4 h-4 text-gray-400 transition-transform ${showGroupDropdown ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {showGroupDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                        {availableGroups.map(group => (
+                          <label key={group._id} className="flex items-start gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0">
+                            <input
+                              type="checkbox"
+                              checked={selectedGroupIds.includes(group._id)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSelectedGroupIds(prev => [...prev, group._id]);
+                                } else {
+                                  setSelectedGroupIds(prev => prev.filter(id => id !== group._id));
+                                }
+                              }}
+                              className="h-4 w-4 mt-0.5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 shrink-0"
+                            />
+                            <div>
+                              <span className="text-sm text-gray-800 font-medium">{group.name}</span>
+                              {group.description && (
+                                <p className="text-xs text-gray-400">{group.description}</p>
+                              )}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
                 <div>
