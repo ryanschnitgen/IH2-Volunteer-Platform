@@ -87,6 +87,10 @@ export default function AdminEventsPage() {
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const [addUserEmail, setAddUserEmail] = useState("");
   const [addingUser, setAddingUser] = useState(false);
+  const [showAddGroupForm, setShowAddGroupForm] = useState(false);
+  const [addGroupName, setAddGroupName] = useState("");
+  const [addGroupSize, setAddGroupSize] = useState(2);
+  const [addingGroup, setAddingGroup] = useState(false);
 
   // Confirm modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -634,6 +638,43 @@ export default function AdminEventsPage() {
       setError(err.message || "Failed to add user to event");
     } finally {
       setAddingUser(false);
+    }
+  };
+
+  const addGroupToEvent = async () => {
+    if (!addGroupName.trim() || !selectedEventForRegistrations) {
+      setError("Please enter a group name");
+      return;
+    }
+    if (addGroupSize < 1) {
+      setError("Group size must be at least 1");
+      return;
+    }
+    setAddingGroup(true);
+    setError("");
+    try {
+      const response = await fetch("/api/events/register-group", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId: selectedEventForRegistrations._id,
+          groupName: addGroupName.trim(),
+          groupSize: addGroupSize,
+          adminEmail: user?.email,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to add group");
+      setSuccess(`Added group "${addGroupName.trim()}" (${addGroupSize} people) to the event`);
+      setAddGroupName("");
+      setAddGroupSize(2);
+      setShowAddGroupForm(false);
+      await viewRegistrations(selectedEventForRegistrations);
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to add group");
+    } finally {
+      setAddingGroup(false);
     }
   };
 
@@ -1413,10 +1454,16 @@ export default function AdminEventsPage() {
                     Copy Check-in Link
                   </button>
                   <button
-                    onClick={() => setShowAddUserForm(!showAddUserForm)}
+                    onClick={() => { setShowAddUserForm(!showAddUserForm); setShowAddGroupForm(false); }}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition"
                   >
-                    {showAddUserForm ? "Cancel" : "+ Add User to Event"}
+                    {showAddUserForm ? "Cancel" : "+ Add User"}
+                  </button>
+                  <button
+                    onClick={() => { setShowAddGroupForm(!showAddGroupForm); setShowAddUserForm(false); }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition"
+                  >
+                    {showAddGroupForm ? "Cancel" : "+ Add Group"}
                   </button>
                   <button
                     onClick={() => {
@@ -1450,6 +1497,45 @@ export default function AdminEventsPage() {
                         className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                       >
                         {addingUser ? "Adding..." : "Add User"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Group Form for empty event */}
+                {showAddGroupForm && (
+                  <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-1">Add Group</h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Add a named group with a headcount. Bypasses spot limits.
+                    </p>
+                    <div className="flex gap-3 items-end">
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Group name</label>
+                        <input
+                          type="text"
+                          value={addGroupName}
+                          onChange={(e) => setAddGroupName(e.target.value)}
+                          placeholder="e.g. Smith Family, Church Group"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="w-28">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">People</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={addGroupSize}
+                          onChange={(e) => setAddGroupSize(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <button
+                        onClick={addGroupToEvent}
+                        disabled={addingGroup || !addGroupName.trim()}
+                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {addingGroup ? "Adding..." : "Add Group"}
                       </button>
                     </div>
                   </div>
@@ -1511,10 +1597,16 @@ export default function AdminEventsPage() {
                     Copy Check-in Link
                   </button>
                   <button
-                    onClick={() => setShowAddUserForm(!showAddUserForm)}
+                    onClick={() => { setShowAddUserForm(!showAddUserForm); setShowAddGroupForm(false); }}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition"
                   >
-                    {showAddUserForm ? "Cancel" : "+ Add User to Event"}
+                    {showAddUserForm ? "Cancel" : "+ Add User"}
+                  </button>
+                  <button
+                    onClick={() => { setShowAddGroupForm(!showAddGroupForm); setShowAddUserForm(false); }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition"
+                  >
+                    {showAddGroupForm ? "Cancel" : "+ Add Group"}
                   </button>
                   <button
                     onClick={() => {
@@ -1548,6 +1640,45 @@ export default function AdminEventsPage() {
                         className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                       >
                         {addingUser ? "Adding..." : "Add User"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Group Form */}
+                {showAddGroupForm && (
+                  <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-1">Add Group</h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Add a named group with a headcount. Bypasses spot limits.
+                    </p>
+                    <div className="flex gap-3 items-end">
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Group name</label>
+                        <input
+                          type="text"
+                          value={addGroupName}
+                          onChange={(e) => setAddGroupName(e.target.value)}
+                          placeholder="e.g. Smith Family, Church Group"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="w-28">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">People</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={addGroupSize}
+                          onChange={(e) => setAddGroupSize(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <button
+                        onClick={addGroupToEvent}
+                        disabled={addingGroup || !addGroupName.trim()}
+                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {addingGroup ? "Adding..." : "Add Group"}
                       </button>
                     </div>
                   </div>
