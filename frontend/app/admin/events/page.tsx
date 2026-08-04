@@ -113,9 +113,9 @@ export default function AdminEventsPage() {
 
   // Miscellaneous walk-in check-ins
   const [walkInLogs, setWalkInLogs] = useState<any[]>([]);
-  const [loadingWalkIns, setLoadingWalkIns] = useState(false);
   const [walkInHours, setWalkInHours] = useState<Record<string, string>>({});
   const [approvingWalkIn, setApprovingWalkIn] = useState<string | null>(null);
+  const [showWalkInModal, setShowWalkInModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin(user.email))) {
@@ -131,7 +131,6 @@ export default function AdminEventsPage() {
   }, [user]);
 
   const loadWalkIns = async () => {
-    setLoadingWalkIns(true);
     try {
       const res = await fetch(`/api/hours/all?adminEmail=${encodeURIComponent(user?.email || '')}&walkIn=true`);
       if (!res.ok) return;
@@ -139,8 +138,6 @@ export default function AdminEventsPage() {
       setWalkInLogs(data.hoursLogs || []);
     } catch {
       // silently ignore
-    } finally {
-      setLoadingWalkIns(false);
     }
   };
 
@@ -1020,72 +1017,22 @@ export default function AdminEventsPage() {
         </div>
       )}
 
-      {/* Miscellaneous Walk-in Check-ins */}
-      {(loadingWalkIns || walkInLogs.length > 0) && (
-        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-amber-200 flex items-center gap-3">
-            <span className="text-amber-600 text-lg">⚠️</span>
-            <div>
-              <h2 className="text-lg font-bold text-amber-900">Miscellaneous Check-ins</h2>
-              <p className="text-sm text-amber-700">
-                These volunteers signed in when no event was scheduled. Assign their hours and approve, or dismiss.
-              </p>
-            </div>
-          </div>
-          {loadingWalkIns ? (
-            <div className="flex justify-center py-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
-            </div>
-          ) : (
-            <div className="divide-y divide-amber-100">
-              {walkInLogs.map(log => (
-                <div key={log._id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900">{log.userName || '—'}</p>
-                    <p className="text-sm text-gray-600">{log.userEmail || '—'}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                      {log.hasGuests && ` · ${log.totalAttendees} people total (${log.guestCount} guest${log.guestCount !== 1 ? 's' : ''})`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={walkInHours[log._id] ?? ''}
-                      onChange={e => setWalkInHours(prev => ({ ...prev, [log._id]: e.target.value }))}
-                      placeholder="hrs"
-                      className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    />
-                    <button
-                      onClick={() => approveWalkIn(log._id, false)}
-                      disabled={approvingWalkIn === log._id}
-                      className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition disabled:opacity-50"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => approveWalkIn(log._id, true)}
-                      disabled={approvingWalkIn === log._id}
-                      className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold transition disabled:opacity-50"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Events List */}
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Events</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-bold text-gray-900">Events</h2>
+                {walkInLogs.length > 0 && (
+                  <button
+                    onClick={() => setShowWalkInModal(true)}
+                    className="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-semibold rounded-full border border-amber-300 transition"
+                  >
+                    {walkInLogs.length} misc. check-in{walkInLogs.length !== 1 ? 's' : ''} pending
+                  </button>
+                )}
+              </div>
               <div className="flex gap-4">
                 {/* View Mode Toggle */}
                 <div className="flex gap-2">
@@ -1212,6 +1159,8 @@ export default function AdminEventsPage() {
                 const currentDate = new Date(year, month, day);
                 const dayEvents = getEventsForDate(currentDate);
                 const isToday = new Date().toDateString() === currentDate.toDateString();
+                const dayDateStr = currentDate.toDateString();
+                const dayWalkIns = walkInLogs.filter(l => new Date(l.date).toDateString() === dayDateStr);
 
                 days.push(
                   <div key={day} className={`min-h-32 border border-gray-200 p-2 ${isToday ? 'bg-blue-50' : 'bg-white'}`}>
@@ -1235,6 +1184,14 @@ export default function AdminEventsPage() {
                           <div className="truncate">{formatTime(event.startTime)} - {formatTime(event.endTime)}</div>
                         </div>
                       ))}
+                      {dayWalkIns.length > 0 && (
+                        <button
+                          onClick={() => setShowWalkInModal(true)}
+                          className="w-full text-left text-xs p-1 rounded bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 transition"
+                        >
+                          {dayWalkIns.length} walk-in{dayWalkIns.length !== 1 ? 's' : ''} pending
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -2010,6 +1967,68 @@ export default function AdminEventsPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Walk-in Check-ins Modal */}
+      {showWalkInModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Miscellaneous Check-ins</h3>
+                <p className="text-sm text-gray-500 mt-0.5">Volunteers who signed in when no event was scheduled. Enter hours and approve, or dismiss.</p>
+              </div>
+              <button onClick={() => setShowWalkInModal(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            {walkInLogs.length === 0 ? (
+              <p className="text-center text-gray-500 py-8">No pending walk-in check-ins.</p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {walkInLogs.map(log => (
+                  <div key={log._id} className="py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">{log.userName || '—'}</p>
+                      <p className="text-sm text-gray-500">{log.userEmail || '—'}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                        {log.hasGuests && ` · ${log.totalAttendees} people (${log.guestCount} guest${log.guestCount !== 1 ? 's' : ''})`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={walkInHours[log._id] ?? ''}
+                        onChange={e => setWalkInHours(prev => ({ ...prev, [log._id]: e.target.value }))}
+                        placeholder="hrs"
+                        className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                      <button
+                        onClick={() => approveWalkIn(log._id, false)}
+                        disabled={approvingWalkIn === log._id}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => approveWalkIn(log._id, true)}
+                        disabled={approvingWalkIn === log._id}
+                        className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold transition disabled:opacity-50"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
