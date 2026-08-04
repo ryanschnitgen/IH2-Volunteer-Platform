@@ -111,6 +111,12 @@ export default function AdminEventsPage() {
     onConfirm: () => void;
   }>({ title: "", message: "", onConfirm: () => {} });
 
+  // Miscellaneous walk-in check-ins
+  const [walkInLogs, setWalkInLogs] = useState<any[]>([]);
+  const [loadingWalkIns, setLoadingWalkIns] = useState(false);
+  const [walkInHours, setWalkInHours] = useState<Record<string, string>>({});
+  const [approvingWalkIn, setApprovingWalkIn] = useState<string | null>(null);
+
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin(user.email))) {
       router.push("/");
@@ -120,8 +126,45 @@ export default function AdminEventsPage() {
   useEffect(() => {
     if (user && isAdmin(user.email)) {
       loadEvents();
+      loadWalkIns();
     }
   }, [user]);
+
+  const loadWalkIns = async () => {
+    setLoadingWalkIns(true);
+    try {
+      const res = await fetch(`/api/hours/all?adminEmail=${encodeURIComponent(user?.email || '')}&walkIn=true`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setWalkInLogs(data.hoursLogs || []);
+    } catch {
+      // silently ignore
+    } finally {
+      setLoadingWalkIns(false);
+    }
+  };
+
+  const approveWalkIn = async (logId: string, dismiss: boolean) => {
+    setApprovingWalkIn(logId);
+    try {
+      const hours = parseFloat(walkInHours[logId] || '0');
+      await fetch('/api/hours/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hoursLogId: logId,
+          approved: !dismiss,
+          hours: dismiss ? undefined : hours,
+          adminEmail: user?.email,
+        }),
+      });
+      setWalkInLogs(prev => prev.filter(l => l._id !== logId));
+    } catch {
+      // silently ignore
+    } finally {
+      setApprovingWalkIn(null);
+    }
+  };
 
   const loadEvents = async () => {
     try {
@@ -974,6 +1017,66 @@ export default function AdminEventsPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Miscellaneous Walk-in Check-ins */}
+      {(loadingWalkIns || walkInLogs.length > 0) && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-amber-200 flex items-center gap-3">
+            <span className="text-amber-600 text-lg">⚠️</span>
+            <div>
+              <h2 className="text-lg font-bold text-amber-900">Miscellaneous Check-ins</h2>
+              <p className="text-sm text-amber-700">
+                These volunteers signed in when no event was scheduled. Assign their hours and approve, or dismiss.
+              </p>
+            </div>
+          </div>
+          {loadingWalkIns ? (
+            <div className="flex justify-center py-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
+            </div>
+          ) : (
+            <div className="divide-y divide-amber-100">
+              {walkInLogs.map(log => (
+                <div key={log._id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900">{log.userName || '—'}</p>
+                    <p className="text-sm text-gray-600">{log.userEmail || '—'}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      {log.hasGuests && ` · ${log.totalAttendees} people total (${log.guestCount} guest${log.guestCount !== 1 ? 's' : ''})`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={walkInHours[log._id] ?? ''}
+                      onChange={e => setWalkInHours(prev => ({ ...prev, [log._id]: e.target.value }))}
+                      placeholder="hrs"
+                      className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                    <button
+                      onClick={() => approveWalkIn(log._id, false)}
+                      disabled={approvingWalkIn === log._id}
+                      className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => approveWalkIn(log._id, true)}
+                      disabled={approvingWalkIn === log._id}
+                      className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold transition disabled:opacity-50"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

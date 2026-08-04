@@ -11,9 +11,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const walkIn = request.nextUrl.searchParams.get('walkIn') === 'true';
+
     await connectDB();
 
-    const hoursLogs = await HoursLog.find({})
+    const query = walkIn
+      ? { source: 'Walk-in Check-In', pendingApproval: true }
+      : {};
+
+    const hoursLogs = await HoursLog.find(query)
       .sort({ date: -1 })
       .lean();
 

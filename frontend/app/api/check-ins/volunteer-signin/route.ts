@@ -431,6 +431,28 @@ export async function POST(request: NextRequest) {
         source: 'Universal Check-In',
         matchType,
       });
+    } else if (events.length === 0) {
+      // No active event — record a walk-in placeholder so admin can assign hours later
+      await HoursLog.create({
+        volunteerId: volunteer._id,
+        userId: volunteer.linkedUserId || undefined,
+        userEmail: normalizedEmail,
+        userName: name,
+        email: normalizedEmail,
+        date: checkInTime,
+        category: 'Walk-in',
+        description: hasGuests
+          ? `Walk-in with ${actualGuestCount} guest${actualGuestCount > 1 ? 's' : ''} (${totalAttendees} total people)`
+          : 'Walk-in (no event scheduled)',
+        isUniqueVolunteer: true,
+        guestCount: actualGuestCount,
+        totalAttendees,
+        hasGuests: hasGuests || false,
+        hours: 0,
+        pendingApproval: true,
+        source: 'Walk-in Check-In',
+        matchType,
+      });
     }
 
     const responseMessage = events.length > 1
