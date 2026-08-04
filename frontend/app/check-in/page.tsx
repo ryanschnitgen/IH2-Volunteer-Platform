@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface KioskEvent {
   _id: string;
@@ -28,6 +29,7 @@ type Mode =
   | "success";
 
 export default function VolunteerCheckIn() {
+  const { user } = useAuth();
   const [mode, setMode] = useState<Mode>("loading");
 
   // Kiosk data
@@ -50,6 +52,18 @@ export default function VolunteerCheckIn() {
   const [error, setError] = useState("");
   const [checkedInEvents, setCheckedInEvents] = useState<string[]>([]);
   const [autoMatched, setAutoMatched] = useState(false);
+
+  // Pre-fill name/email from logged-in user
+  useEffect(() => {
+    if (!user) return;
+    const parts = (user.displayName || '').trim().split(/\s+/);
+    setFirstName(parts[0] || '');
+    setLastName(parts.length > 1 ? parts[parts.length - 1] : '');
+    setMiddleName(parts.length > 2 ? parts.slice(1, -1).join(' ') : '');
+    setEmail(user.email || '');
+    const full = (user.displayName || '').trim() || user.email || '';
+    setName(full);
+  }, [user]);
 
   // Load today's events on mount and refresh at midnight
   useEffect(() => {
@@ -87,11 +101,26 @@ export default function VolunteerCheckIn() {
     try {
       const res = await fetch(`/api/check-ins/kiosk?eventId=${eventId}`);
       const data = await res.json();
-      setRegistrations(data.registrations || []);
-      setMode("member-select");
+      const regs: KioskRegistration[] = data.registrations || [];
+      setRegistrations(regs);
+
+      // If logged in, find their registration automatically
+      if (user?.email) {
+        const match = regs.find(r => r.userEmail.toLowerCase() === user.email!.toLowerCase());
+        if (match) {
+          setSelectedRegId(match._id);
+          setName(match.userName);
+          setEmail(match.userEmail);
+        }
+        // Either way (matched or walk-in), skip member-select for logged-in users
+        setHasGuests(null);
+        setMode("guest-question");
+      } else {
+        setMode("member-select");
+      }
     } catch {
       setRegistrations([]);
-      setMode("member-select");
+      setMode(user?.email ? "guest-question" : "member-select");
     }
   }
 
@@ -208,20 +237,28 @@ export default function VolunteerCheckIn() {
   }
 
   function goToManual() {
-    setFirstName("");
-    setLastName("");
-    setName("");
-    setEmail("");
     setHasGuests(null);
     setError("");
-    setMode("manual");
+    if (user?.email) {
+      // Already identified — skip the name/email form
+      setMode("guest-question");
+    } else {
+      setFirstName("");
+      setLastName("");
+      setName("");
+      setEmail("");
+      setMode("manual");
+    }
   }
 
   function goBack() {
     setError("");
     if (mode === "member-select") setMode("event-select");
-    else if (mode === "guest-question") setMode("member-select");
-    else if (mode === "guest-count") {
+    else if (mode === "guest-question") {
+      // Logged-in users skipped member-select, go back to event-select or no-events
+      if (user?.email) setMode(todayEvents.length > 0 ? "event-select" : "no-events");
+      else setMode("member-select");
+    } else if (mode === "guest-count") {
       setMode(selectedRegId ? "guest-question" : "manual");
     } else if (mode === "manual") {
       setMode(todayEvents.length > 0 ? "event-select" : "no-events");
@@ -303,7 +340,7 @@ export default function VolunteerCheckIn() {
           </div>
           <button
             type="button"
-            onClick={() => setMode("manual")}
+            onClick={goToManual}
             className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-medium text-sm transition"
           >
             Sign in anyway (walk-in)
@@ -326,6 +363,11 @@ export default function VolunteerCheckIn() {
           {selectedEvent && (
             <p className="text-sm text-gray-500 mt-1">
               {selectedEvent.title} · {selectedEvent.startTime}–{selectedEvent.endTime}
+            </p>
+          )}
+          {user && (
+            <p className="text-sm text-green-600 font-medium mt-2">
+              Signed in as {user.displayName || user.email}
             </p>
           )}
         </div>
